@@ -1,0 +1,47 @@
+{
+  "updatedAt": "2026-10-10T07:56:04.800Z",
+  "version": 2,
+  "source": "~plan",
+  "originCommand": "plan",
+  "qaMode": "standard",
+  "qaFocus": [
+    "水位与7天周期",
+    "悬停10行与分页",
+    "边缘停靠与置顶",
+    "CPA错误与凭据安全"
+  ],
+  "ui": {
+    "required": true,
+    "designContract": true,
+    "sourcePriority": [
+      "plan.md",
+      ".helloagents/DESIGN.md",
+      "hello-ui"
+    ],
+    "styleAdvisor": {
+      "required": false,
+      "reason": "",
+      "focus": []
+    },
+    "visualValidation": {
+      "required": true,
+      "reason": "原生浮窗需要布局渲染验证",
+      "screens": [
+        "水柱",
+        "3账号详情",
+        "10账号详情"
+      ],
+      "states": [
+        "演示",
+        "空",
+        "错误"
+      ]
+    }
+  },
+  "advisor": {
+    "required": false,
+    "reason": "",
+    "focus": [],
+    "preferredSources": []
+  }
+}

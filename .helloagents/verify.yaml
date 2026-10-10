@@ -1,0 +1,9 @@
+# Verify commands for HelloAGENTS qa-review
+# One command per line.
+
+commands:
+  - dotnet build "src/QuotaFloat/QuotaFloat.csproj" -c Release
+  - dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
+  - dotnet publish "src/QuotaFloat/QuotaFloat.csproj" -c Release --self-contained false -o "dist"
+  - dotnet "dist/CodexQuotaFloat.dll" --render-preview "artifacts"
+  - dotnet "dist/CodexQuotaFloat.dll" --smoke-test "artifacts/native-final"

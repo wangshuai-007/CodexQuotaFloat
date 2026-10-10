@@ -1,0 +1,67 @@
+<Window x:Class="QuotaFloat.DetailWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Codex 额度详情" Width="600" SizeToContent="Height" WindowStyle="None"
+ AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize">
+ <Border x:Name="Panel" Margin="10" Padding="24,22,24,18" CornerRadius="22"
+  Background="{StaticResource Surface}" BorderBrush="{StaticResource Stroke}" BorderThickness="1">
+  <Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.14" Color="#476369"/></Border.Effect>
+  <Grid>
+   <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+   </Grid.RowDefinitions>
+   <Grid>
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel>
+     <TextBlock Text="CODEX / 额度水位" FontSize="22" FontWeight="SemiBold"/>
+     <TextBlock x:Name="SourceLabel" Margin="0,6,0,0" FontSize="13" Foreground="{StaticResource Muted}"/>
+    </StackPanel>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+     <Button Content="设置" ToolTip="设置 · Ctrl+," Click="SettingsClicked"/>
+     <Button Content="收起" ToolTip="收起 · Escape" Click="CollapseClicked" Margin="8,0,0,0"/>
+    </StackPanel>
+   </Grid>
+   <Grid Grid.Row="1" Margin="0,22,0,18">
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel VerticalAlignment="Center">
+     <TextBlock Text="总体可用水位" FontWeight="SemiBold"/>
+     <TextBlock x:Name="CountLabel" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/>
+    </StackPanel>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+     <TextBlock x:Name="WaterLabel" Text="—" FontFamily="Bahnschrift" FontSize="38"/>
+     <TextBlock Text="%" FontSize="18" Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="3,0,0,6"/>
+    </StackPanel>
+   </Grid>
+   <Border Grid.Row="2" x:Name="NoticeBox" Background="#EAF1ED" CornerRadius="10" Padding="12,9" Margin="0,0,0,12">
+    <TextBlock x:Name="Notice" TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource Muted}"/>
+   </Border>
+   <ScrollViewer Grid.Row="3" x:Name="RowScroller" MaxHeight="450" VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
+    <StackPanel x:Name="Rows"/>
+   </ScrollViewer>
+   <Grid Grid.Row="4" Margin="0,14,0,12">
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+     <CheckBox x:Name="PinDetails" Content="固定详情" Checked="PinChanged" Unchecked="PinChanged" FontSize="13"/>
+     <CheckBox x:Name="TopmostToggle" Content="置顶" Checked="TopmostChanged" Unchecked="TopmostChanged" FontSize="13" Margin="16,8,0,8"/>
+    </StackPanel>
+    <StackPanel Grid.Column="1" Orientation="Horizontal">
+     <Button x:Name="Previous" Content="‹" ToolTip="上一页" Click="PreviousClicked"/>
+     <TextBlock x:Name="PageLabel" FontSize="13" VerticalAlignment="Center" Margin="10,0"/>
+     <Button x:Name="Next" Content="›" ToolTip="下一页" Click="NextClicked"/>
+    </StackPanel>
+   </Grid>
+   <Border Grid.Row="5" BorderBrush="{StaticResource Stroke}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+    <Grid>
+     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <StackPanel>
+      <TextBlock Text="蓝 5h剩余 · 绿 周剩余 · 橙 7天已走过时间" FontSize="12" Foreground="{StaticResource Muted}"/>
+      <TextBlock Text="水位 = 各账号双窗口剩余较小值的平均，非 token 总量" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+     </StackPanel>
+     <Button Grid.Column="1" x:Name="RefreshButton" Content="刷新" ToolTip="刷新额度 · F5" Click="RefreshClicked" Margin="12,0,0,0"/>
+    </Grid>
+   </Border>
+  </Grid>
+ </Border>
+</Window>
