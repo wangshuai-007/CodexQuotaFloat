@@ -8,17 +8,21 @@ using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
-/// <summary>原生矢量水柱；水位是有效账号的双窗口剩余下限平均值。</summary>
+/// <summary>32×224的窄水柱，每行三色线代表一个账号，最多显示10个账号。</summary>
 public sealed class QuotaGauge : FrameworkElement
 {
+    public const double AccountsTop = 48;
+    public const double AccountsHeight = 144;
     public static readonly DependencyProperty LevelProperty = DependencyProperty.Register(
         nameof(Level), typeof(double), typeof(QuotaGauge), new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.AffectsRender));
     public double Level { get => (double)GetValue(LevelProperty); set => SetValue(LevelProperty, value); }
+    public AccountViewport Viewport { get; } = new();
     private IReadOnlyList<AccountQuota> accounts = [];
     private DateTimeOffset now;
     private string source = "演示";
     private bool unknown = true;
     private bool stale;
+    private bool highlight;
     public event Action? InvokeRequested;
     private static readonly Brush Ink = BrushOf("#203038");
     private static readonly Brush Muted = BrushOf("#536D76");
@@ -28,15 +32,18 @@ public sealed class QuotaGauge : FrameworkElement
 
     public QuotaGauge()
     {
-        Width = 96;
-        Height = 304;
+        Width = 32;
+        Height = 224;
         Focusable = true;
         Cursor = System.Windows.Input.Cursors.Hand;
     }
 
-    /// <summary>更新快照，只有平台允许动效时执行短水位过渡。</summary>
+    /// <summary>更新水位并保留选中账号；额度刷新不重置滚动位置。</summary>
     public void Update(IReadOnlyList<AccountQuota> values, string label, DateTimeOffset time, bool oldData, bool animate)
     {
+        var selectedId = Viewport.Selected >= 0 && Viewport.Selected < accounts.Count ? accounts[Viewport.Selected].Id : null;
+        var same = selectedId is null ? -1 : values.ToList().FindIndex(a => a.Id == selectedId);
+        Viewport.Reset(values.Count, same >= 0 ? same : null);
         accounts = values;
         now = time;
         source = label;
@@ -45,105 +52,99 @@ public sealed class QuotaGauge : FrameworkElement
         unknown = value is null;
         var target = value ?? 0;
         if (animate && SystemParameters.ClientAreaAnimation)
-            BeginAnimation(LevelProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(260)) { FillBehavior = FillBehavior.HoldEnd });
-        else
-        {
-            BeginAnimation(LevelProperty, null);
-            Level = target;
-        }
+            BeginAnimation(LevelProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(260)));
+        else { BeginAnimation(LevelProperty, null); Level = target; }
         InvalidateVisual();
     }
+
+    /// <summary>鼠标上下移动选中当前可见行，不展开全账号面板。</summary>
+    public int SelectAt(double y)
+    {
+        var index = Viewport.HitTest(y, AccountsTop, AccountsHeight);
+        if (index >= 0) Viewport.Select(index);
+        highlight = index >= 0;
+        InvalidateVisual();
+        return index;
+    }
+
+    /// <summary>滚动到前后账号，超过10个时移动账号行视口。</summary>
+    public int Scroll(int steps)
+    {
+        Viewport.Step(steps);
+        highlight = Viewport.Selected >= 0;
+        InvalidateVisual();
+        return Viewport.Selected;
+    }
+
+    /// <summary>移出后去掉选中反馈，但保留游标和视口。</summary>
+    public void ClearHighlight() { highlight = false; InvalidateVisual(); }
+
+    public double SelectedY => Viewport.Center(Viewport.Selected, AccountsTop, AccountsHeight);
 
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
-        var capsule = new Rect(2, 2, 92, 300);
-        var background = new LinearGradientBrush(ColorOf("#FFFFFF"), ColorOf("#E9F1F0"), 90);
-        dc.DrawRoundedRectangle(background, new Pen(BrushOf("#CEDDDF"), 1), capsule, 43, 43);
-        dc.PushClip(new RectangleGeometry(capsule, 43, 43));
+        var capsule = new Rect(1, 1, 30, 222);
+        dc.DrawRoundedRectangle(new LinearGradientBrush(ColorOf("#FFFFFF"), ColorOf("#E9F1F0"), 90),
+            new Pen(BrushOf("#CEDDDF"), 1), capsule, 15, 15);
+        dc.PushClip(new RectangleGeometry(capsule, 15, 15));
         DrawWater(dc);
-        DrawTicks(dc);
-        Text(dc, "CODEX", 48, 26, 11, Muted, true);
-        Text(dc, unknown ? "—" : $"{Level:0}", 46, 47, 34, Ink, true, "Bahnschrift");
-        if (!unknown) Text(dc, "%", 73, 63, 12, Muted, true);
-        Text(dc, stale ? "旧数据" : "可用水位", 48, 88, 11, Muted, true);
-        DrawMeters(dc);
-        Text(dc, $"{accounts.Count} 个账号", 48, 240, 12, Ink, true);
-        Text(dc, source, 48, 260, 11, Muted, true);
-        dc.DrawRoundedRectangle(BrushOf("#6C939F"), null, new Rect(36, 284, 24, 3), 1.5, 1.5);
-        dc.Pop();
-        if (IsKeyboardFocused)
-            dc.DrawRoundedRectangle(null, new Pen(Five, 2), new Rect(1, 1, 94, 302), 44, 44);
-    }
-
-    private void DrawWater(DrawingContext dc)
-    {
-        var y = 294 - Math.Clamp(Level, 0, 100) / 100 * 268;
-        var fill = new LinearGradientBrush(ColorOf("#C5E9E8"), ColorOf("#69BCC6"), 90) { Opacity = stale ? 0.28 : 0.72 };
-        var water = new StreamGeometry();
-        using (var path = water.Open())
-        {
-            path.BeginFigure(new Point(0, y), true, true);
-            path.BezierTo(new Point(26, y - 9), new Point(57, y + 10), new Point(96, y), true, false);
-            path.LineTo(new Point(96, 306), true, false);
-            path.LineTo(new Point(0, 306), true, false);
-        }
-        dc.DrawGeometry(fill, null, water);
-        var surface = new StreamGeometry();
-        using (var path = surface.Open())
-        {
-            path.BeginFigure(new Point(0, y + 4), false, false);
-            path.BezierTo(new Point(38, y + 12), new Point(65, y - 5), new Point(96, y + 4), true, false);
-        }
-        dc.DrawGeometry(null, new Pen(BrushOf("#83C9D0"), 1), surface);
-    }
-
-    private static void DrawTicks(DrawingContext dc)
-    {
         for (var i = 0; i < 15; i++)
-        {
-            var y = 52 + i * 14;
-            var length = i % 5 == 0 ? 7 : 3;
-            dc.DrawLine(new Pen(BrushOf("#AABFC2"), 0.8), new Point(8, y), new Point(8 + length, y));
-            dc.DrawLine(new Pen(BrushOf("#AABFC2"), 0.8), new Point(88 - length, y), new Point(88, y));
-        }
+            dc.DrawLine(new Pen(BrushOf("#9CB5B9"), 0.7), new Point(3, 48 + i * 10), new Point(i % 5 == 0 ? 7 : 5, 48 + i * 10));
+        Text(dc, unknown ? "—" : $"{Level:0}%", 16, 12, 11, Ink, "Bahnschrift");
+        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : "…", 16, 29, 9, Muted);
+        DrawMeters(dc);
+        Text(dc, $"{accounts.Count}", 16, 200, 10, Ink, "Bahnschrift");
+        dc.DrawRoundedRectangle(Muted, null, new Rect(11, 216, 10, 2), 1, 1);
+        dc.Pop();
+        if (IsKeyboardFocused) dc.DrawRoundedRectangle(null, new Pen(Five, 1.5), new Rect(0.5, 0.5, 31, 223), 15, 15);
     }
 
     private void DrawMeters(DrawingContext dc)
     {
-        if (accounts.Count <= 4)
+        for (var slot = 0; slot < Viewport.VisibleCount; slot++)
         {
-            for (var i = 0; i < accounts.Count; i++)
-            {
-                var account = accounts[i];
-                var y = 124 + i * 24;
-                Text(dc, $"{i + 1:00}", 16, y - 1, 8, Muted, true);
-                Meter(dc, account.FiveHourRemaining, Five, y);
-                Meter(dc, account.WeeklyRemaining, Week, y + 5);
-                Meter(dc, QuotaMath.WeekElapsed(account.WeeklyReset, now), Cycle, y + 10);
-            }
-            if (accounts.Count == 0) Text(dc, "暂无数据", 48, 153, 11, Muted, true);
-            return;
+            var index = Viewport.Start + slot;
+            var account = accounts[index];
+            var y = Viewport.Center(index, AccountsTop, AccountsHeight);
+            if (highlight && index == Viewport.Selected)
+                dc.DrawRoundedRectangle(BrushOf("#DBECE8"), new Pen(BrushOf("#89A9AE"), 0.6),
+                    new Rect(6, y - 6, 25, 12), 3, 3);
+            Meter(dc, account.FiveHourRemaining, Five, y - 3.5);
+            Meter(dc, account.WeeklyRemaining, Week, y);
+            Meter(dc, QuotaMath.WeekElapsed(account.WeeklyReset, now), Cycle, y + 3.5);
         }
-        var usable = accounts.Where(a => a.Available(now) is not null).ToArray();
-        Meter(dc, usable.Length == 0 ? null : usable.Average(a => a.FiveHourRemaining), Five, 137);
-        Meter(dc, usable.Length == 0 ? null : usable.Average(a => a.WeeklyRemaining), Week, 157);
-        Meter(dc, usable.Length == 0 ? null : usable.Average(a => QuotaMath.WeekElapsed(a.WeeklyReset, now)), Cycle, 177);
-        Text(dc, "均值", 48, 200, 10, Muted, true);
+        if (Viewport.Start > 0) Text(dc, "↑", 16, 39, 8, Muted);
+        if (Viewport.Start + Viewport.VisibleCount < accounts.Count) Text(dc, "↓", 16, 190, 8, Muted);
+    }
+
+    private void DrawWater(DrawingContext dc)
+    {
+        var y = 222 - Math.Clamp(Level, 0, 100) / 100 * 180;
+        var water = new StreamGeometry();
+        using (var path = water.Open())
+        {
+            path.BeginFigure(new Point(0, y), true, true);
+            path.BezierTo(new Point(10, y - 3), new Point(20, y + 3), new Point(32, y), true, false);
+            path.LineTo(new Point(32, 225), true, false);
+            path.LineTo(new Point(0, 225), true, false);
+        }
+        dc.DrawGeometry(new LinearGradientBrush(ColorOf("#C5E9E8"), ColorOf("#69BCC6"), 90)
+            { Opacity = stale ? 0.28 : 0.72 }, null, water);
     }
 
     private static void Meter(DrawingContext dc, double? value, Brush color, double y)
     {
-        dc.DrawRoundedRectangle(BrushOf("#C9DADA"), null, new Rect(29, y, 46, 2.5), 1.25, 1.25);
+        dc.DrawRoundedRectangle(BrushOf("#BDCFD1"), null, new Rect(9, y, 20, 1.8), 0.9, 0.9);
         if (value is { } percent)
-            dc.DrawRoundedRectangle(color, null, new Rect(29, y, 46 * QuotaMath.Clamp(percent) / 100, 2.5), 1.25, 1.25);
+            dc.DrawRoundedRectangle(color, null, new Rect(9, y, 20 * QuotaMath.Clamp(percent) / 100, 1.8), 0.9, 0.9);
     }
 
-    private void Text(DrawingContext dc, string text, double x, double y, double size, Brush color, bool centered, string font = "Segoe UI Variable Text")
+    private void Text(DrawingContext dc, string text, double x, double y, double size, Brush color, string font = "Segoe UI Variable Text")
     {
         var formatted = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
             new Typeface(font), size, color, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-        dc.DrawText(formatted, new Point(centered ? x - formatted.Width / 2 : x, y));
+        dc.DrawText(formatted, new Point(x - formatted.Width / 2, y));
     }
 
     private static Color ColorOf(string hex) => (Color)ColorConverter.ConvertFromString(hex);
@@ -152,7 +153,7 @@ public sealed class QuotaGauge : FrameworkElement
 
     private sealed class GaugePeer(QuotaGauge gauge) : FrameworkElementAutomationPeer(gauge), IInvokeProvider
     {
-        protected override string GetNameCore() => $"Codex 额度浮窗，{gauge.source}，{(gauge.unknown ? "未知" : $"{gauge.Level:0}%")}，{gauge.accounts.Count}个账号。按Enter展开详情，F5刷新。";
+        protected override string GetNameCore() => $"Codex额度浮窗，{gauge.source}，{gauge.accounts.Count}个账号。上下键切换账号，Enter查看全部。";
         protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Button;
         public override object? GetPattern(PatternInterface patternInterface) => patternInterface == PatternInterface.Invoke ? this : base.GetPattern(patternInterface);
         public void Invoke() => gauge.Dispatcher.BeginInvoke(new Action(() => gauge.InvokeRequested?.Invoke()));

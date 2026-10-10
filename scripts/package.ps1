@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root "dist"
 $readme = Join-Path $root "README.md"
-$preview = Join-Path $root "artifacts/preview-3.png"
+$preview = Join-Path $root "artifacts/preview-hover.png"
 $archive = Join-Path $root "artifacts/CodexQuotaFloat-win-x64.zip"
 if (-not (Test-Path -LiteralPath (Join-Path $dist "CodexQuotaFloat.exe"))) {
     throw (-join [char[]](0x8BF7,0x5148,0x53D1,0x5E03,0x5E94,0x7528,0x3002))

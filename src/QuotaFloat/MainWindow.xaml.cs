@@ -13,6 +13,8 @@ public partial class MainWindow : Window
     private string managementKey;
     private readonly QuotaSession session;
     private readonly DetailWindow details = new();
+    private readonly AccountPeekWindow peek = new();
+    private int wheelRemainder;
     private readonly DispatcherTimer hoverTimer = new() { Interval = TimeSpan.FromMilliseconds(330) };
     private readonly DispatcherTimer refreshTimer = new();
     private readonly DispatcherTimer clockTimer = new() { Interval = TimeSpan.FromMinutes(1) };
@@ -38,15 +40,15 @@ public partial class MainWindow : Window
         if (persist) WireTray();
         session.Changed += UpdateViews;
         SourceInitialized += (_, _) => RestorePosition();
-        Loaded += async (_, _) => { details.Owner = this; await session.RefreshAsync(); };
-        LocationChanged += (_, _) => { if (details.IsVisible) PositionDetails(); };
-        DpiChanged += (_, _) => { if (details.IsVisible) PositionDetails(); };
+        Loaded += async (_, _) => { details.Owner = this; peek.Owner = this; await session.RefreshAsync(); };
+        LocationChanged += (_, _) => PositionVisiblePanels();
+        DpiChanged += (_, _) => PositionVisiblePanels();
         PreviewKeyDown += OnKeyDown;
         Closing += (_, _) => SavePosition();
         Closed += (_, _) =>
         {
             refreshTimer.Stop(); clockTimer.Stop(); hoverTimer.Stop();
-            tray.ContextMenuStrip?.Dispose(); tray.Dispose(); session.Dispose(); details.Close();
+            tray.ContextMenuStrip?.Dispose(); tray.Dispose(); session.Dispose(); details.Close(); peek.Close();
         };
     }
 
@@ -59,15 +61,19 @@ public partial class MainWindow : Window
         details.TopmostRequested += SetTopmost;
         details.MouseEnter += (_, _) => hoverTimer.Stop();
         details.MouseLeave += (_, _) => hoverTimer.Start();
+        peek.MouseEnter += (_, _) => hoverTimer.Stop();
+        peek.MouseLeave += (_, _) => hoverTimer.Start();
     }
 
     private void WireTimers()
     {
         hoverTimer.Tick += (_, _) =>
         {
-            if (pinned || dragging || settingsOpen || menu.IsOpen || Gauge.IsMouseOver || details.IsMouseOver) return;
+            if (pinned || dragging || settingsOpen || menu.IsOpen || Gauge.IsMouseOver || details.IsMouseOver || peek.IsMouseOver) return;
             hoverTimer.Stop();
             details.Hide();
+            peek.Hide();
+            Gauge.ClearHighlight();
         };
         refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
         refreshTimer.Tick += async (_, _) => { if (!session.AutoRefreshPaused) await session.RefreshAsync(); };
@@ -82,7 +88,7 @@ public partial class MainWindow : Window
         top.Click += (_, _) => SetTopmost(top.IsChecked);
         var dock = new MenuItem { Header = "边缘自动停靠", IsCheckable = true, IsChecked = settings.DockToEdge };
         dock.Click += (_, _) => { settings.DockToEdge = dock.IsChecked; SavePosition(); };
-        var detail = new MenuItem { Header = "展开 / 固定详情" };
+        var detail = new MenuItem { Header = "查看全部账号" };
         detail.Click += (_, _) => { pinned = true; Expand(true); };
         var refresh = new MenuItem { Header = "刷新额度    F5" };
         refresh.Click += async (_, _) => await session.RefreshAsync();
@@ -116,7 +122,8 @@ public partial class MainWindow : Window
         details.Update(session.Accounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
             session.Error, session.Loading, session.UpdatedAt);
         tray.Text = $"Codex 额度浮窗 · {label}";
-        if (details.IsVisible) PositionDetails();
+        if (peek.IsVisible) UpdatePeek();
+        PositionVisiblePanels();
     }
 
     private void RestorePosition()
@@ -141,6 +148,7 @@ public partial class MainWindow : Window
     {
         if (dragging || settingsOpen) return;
         hoverTimer.Stop();
+        peek.Hide();
         UpdateViews();
         PositionDetails();
         if (!details.IsVisible) details.Reveal(settings.ReducedMotion);
@@ -153,6 +161,8 @@ public partial class MainWindow : Window
         pinned = false;
         hoverTimer.Stop();
         details.Hide();
+        peek.Hide();
+        Gauge.ClearHighlight();
         Gauge.Focus();
     }
 
@@ -161,6 +171,7 @@ public partial class MainWindow : Window
         settings.AlwaysOnTop = value;
         Topmost = value;
         details.Topmost = value;
+        peek.Topmost = value;
         SavePosition();
         UpdateViews();
     }
@@ -171,6 +182,7 @@ public partial class MainWindow : Window
         settingsOpen = true;
         hoverTimer.Stop();
         details.Hide();
+        peek.Hide();
         var dialog = new SettingsWindow(settings, managementKey)
             { Owner = this, Topmost = Topmost, MaxHeight = ScreenPlacement.WorkArea(this).Height };
         try
@@ -196,18 +208,20 @@ public partial class MainWindow : Window
         { MessageBox.Show(this, "无法保存浮窗位置，请检查本地设置目录权限。", "Codex 额度浮窗", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private void GaugeEntered(object sender, MouseEventArgs e) => Expand();
+    private void GaugeEntered(object sender, MouseEventArgs e) => ShowPeekAt(e.GetPosition(Gauge).Y);
     private void GaugeLeft(object sender, MouseEventArgs e) => hoverTimer.Start();
     private void GaugePressed(object sender, MouseButtonEventArgs e) => pressStart = e.GetPosition(this);
 
     private void GaugeMoved(object sender, MouseEventArgs e)
     {
-        if (pressStart is not { } start || e.LeftButton != MouseButtonState.Pressed || dragging) return;
+        if (e.LeftButton != MouseButtonState.Pressed) { ShowPeekAt(e.GetPosition(Gauge).Y); return; }
+        if (pressStart is not { } start || dragging) return;
         var movement = e.GetPosition(this) - start;
         if (movement.Length < 5) return;
         dragging = true;
         pressStart = null;
         details.Hide();
+        peek.Hide();
         try { DragMove(); }
         finally
         {
@@ -217,7 +231,8 @@ public partial class MainWindow : Window
                 ScreenPlacement.Clamp(area, Width, Height, Left, Top);
             Left = point.X; Top = point.Y;
             SavePosition();
-            if (pinned || Gauge.IsMouseOver) Expand();
+            if (pinned) Expand();
+            else if (Gauge.IsMouseOver) ShowPeekAt(Mouse.GetPosition(Gauge).Y);
         }
     }
 
@@ -225,13 +240,14 @@ public partial class MainWindow : Window
     {
         if (pressStart is null) return;
         pressStart = null;
-        pinned = !pinned;
-        if (pinned) Expand(true); else Collapse();
+        ToggleAll();
     }
 
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter || e.Key == Key.Space) { pinned = true; Expand(true); e.Handled = true; }
+        if ((e.Key is Key.Up or Key.Down) && !details.IsVisible)
+        { ScrollAccounts(e.Key == Key.Down ? 1 : -1); e.Handled = true; }
         if (e.Key == Key.Escape) { Collapse(); e.Handled = true; }
         if (e.Key == Key.F5) { _ = session.RefreshAsync(); e.Handled = true; }
         if (e.Key == Key.OemComma && Keyboard.Modifiers == ModifierKeys.Control)
