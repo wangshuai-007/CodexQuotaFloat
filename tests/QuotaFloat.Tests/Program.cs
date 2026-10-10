@@ -115,6 +115,7 @@ Check("允许远端HTTPS", CpaQuotaSource.ValidateUrl("https://example.com/v8/ma
 passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
 passed += ManagementKeyTests.Run();
+passed += await TrafficOrderingTests.RunAsync();
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

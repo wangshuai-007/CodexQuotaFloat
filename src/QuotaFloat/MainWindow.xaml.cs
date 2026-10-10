@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
@@ -12,6 +13,9 @@ public partial class MainWindow : Window
     private readonly bool persistSettings;
     private string managementKey;
     private readonly QuotaSession session;
+    private readonly TrafficSession traffic;
+    private System.Drawing.Icon? trayIcon;
+    private IReadOnlyList<AccountQuota> DisplayAccounts = [];
     private readonly DetailWindow details = new();
     private readonly AccountPeekWindow peek = new();
     private int wheelRemainder;
@@ -31,7 +35,9 @@ public partial class MainWindow : Window
         settings = options;
         managementKey = key;
         session = new QuotaSession(settings, key);
+        traffic = new TrafficSession(settings, key);
         InitializeComponent();
+        Icon = (System.Windows.Media.ImageSource)FindResource("AppIcon");
         Topmost = settings.AlwaysOnTop;
         WireDetails();
         Gauge.InvokeRequested += () => { pinned = true; Expand(true); };
@@ -39,8 +45,9 @@ public partial class MainWindow : Window
         WireTimers();
         if (persist) WireTray();
         session.Changed += UpdateViews;
+        traffic.Changed += UpdateTraffic;
         SourceInitialized += (_, _) => RestorePosition();
-        Loaded += async (_, _) => { details.Owner = this; peek.Owner = this; await session.RefreshAsync(); };
+        Loaded += async (_, _) => { details.Owner = this; peek.Owner = this; await RefreshAll(); };
         LocationChanged += (_, _) => PositionVisiblePanels();
         DpiChanged += (_, _) => PositionVisiblePanels();
         PreviewKeyDown += OnKeyDown;
@@ -48,13 +55,21 @@ public partial class MainWindow : Window
         Closed += (_, _) =>
         {
             refreshTimer.Stop(); clockTimer.Stop(); hoverTimer.Stop();
-            tray.ContextMenuStrip?.Dispose(); tray.Dispose(); session.Dispose(); details.Close(); peek.Close();
+            tray.ContextMenuStrip?.Dispose(); tray.Dispose(); trayIcon?.Dispose();
+            session.Dispose(); traffic.Dispose(); details.Close(); peek.Close();
         };
     }
 
     private void WireDetails()
     {
-        details.RefreshRequested += async () => await session.RefreshAsync();
+        details.RefreshRequested += async () => await RefreshAll(true);
+        details.OrderRequested += (id, destination) =>
+        {
+            settings.AccountOrder = AccountOrdering.Move(session.Accounts, settings.AccountOrder, id, destination).ToList();
+            details.ShowOrderDestination(destination, session.Accounts.Count);
+            SavePosition();
+            UpdateViews();
+        };
         details.SettingsRequested += OpenSettings;
         details.CollapseRequested += Collapse;
         details.PinRequested += value => pinned = value;
@@ -80,7 +95,7 @@ public partial class MainWindow : Window
             Gauge.ClearHighlight();
         };
         refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
-        refreshTimer.Tick += async (_, _) => { if (!session.AutoRefreshPaused) await session.RefreshAsync(); };
+        refreshTimer.Tick += async (_, _) => await RefreshAll();
         clockTimer.Tick += (_, _) => UpdateViews();
         refreshTimer.Start();
         clockTimer.Start();
@@ -95,7 +110,7 @@ public partial class MainWindow : Window
         var detail = new MenuItem { Header = "查看全部账号" };
         detail.Click += (_, _) => { pinned = true; Expand(true); };
         var refresh = new MenuItem { Header = "刷新额度    F5" };
-        refresh.Click += async (_, _) => await session.RefreshAsync();
+        refresh.Click += async (_, _) => await RefreshAll(true);
         var configure = new MenuItem { Header = "设置    Ctrl+," };
         configure.Click += (_, _) => OpenSettings();
         var quit = new MenuItem { Header = "退出浮窗" };
@@ -108,7 +123,10 @@ public partial class MainWindow : Window
 
     private void WireTray()
     {
-        tray.Icon = System.Drawing.SystemIcons.Information;
+        using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/App.ico"))!.Stream;
+        using var loadedIcon = new System.Drawing.Icon(stream);
+        trayIcon = (System.Drawing.Icon)loadedIcon.Clone();
+        tray.Icon = trayIcon;
         tray.Text = "Codex 额度浮窗";
         tray.Visible = true;
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(() => { RestorePosition(); Show(); Activate(); pinned = true; Expand(true); });
@@ -121,13 +139,25 @@ public partial class MainWindow : Window
 
     private void UpdateViews()
     {
+        DisplayAccounts = AccountOrdering.Apply(session.Accounts, settings.AccountOrder);
         var label = session.Loading ? "读取中" : session.Error is not null ? "连接失败" : settings.UseDemo ? "演示" : "CPA";
-        Gauge.Update(session.Accounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
-        details.Update(session.Accounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
+        Gauge.Update(DisplayAccounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
+        details.Update(DisplayAccounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
             session.Error, session.Loading, session.UpdatedAt);
         tray.Text = $"Codex 额度浮窗 · {label}";
         if (peek.IsVisible) UpdatePeek();
         PositionVisiblePanels();
+        UpdateTraffic();
+    }
+
+    private Task RefreshAll(bool manual = false) => Task.WhenAll(
+        manual || !session.AutoRefreshPaused ? session.RefreshAsync() : Task.CompletedTask,
+        traffic.RefreshAsync(manual));
+
+    private void UpdateTraffic()
+    {
+        Gauge.SetTraffic(traffic.Snapshot);
+        details.SetTraffic(traffic.Snapshot, settings.UseDemo);
     }
 
     private void RestorePosition()
@@ -194,7 +224,8 @@ public partial class MainWindow : Window
             Topmost = settings.AlwaysOnTop;
             refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
             session.Configure(settings, managementKey);
-            _ = session.RefreshAsync();
+            traffic.Configure(settings, managementKey);
+            _ = RefreshAll();
         }
         finally { settingsOpen = false; if (pinned) Expand(); }
     }
@@ -250,7 +281,7 @@ public partial class MainWindow : Window
         if ((e.Key is Key.Up or Key.Down) && !details.IsVisible)
         { ScrollAccounts(e.Key == Key.Down ? 1 : -1); e.Handled = true; }
         if (e.Key == Key.Escape) { Collapse(); e.Handled = true; }
-        if (e.Key == Key.F5) { _ = session.RefreshAsync(); e.Handled = true; }
+        if (e.Key == Key.F5) { _ = RefreshAll(true); e.Handled = true; }
         if (e.Key == Key.OemComma && Keyboard.Modifiers == ModifierKeys.Control)
         { OpenSettings(); e.Handled = true; }
     }

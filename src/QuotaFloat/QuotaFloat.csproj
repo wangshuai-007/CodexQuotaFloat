@@ -9,8 +9,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>CodexQuotaFloat</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/App.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../QuotaFloat.Core/QuotaFloat.Core.csproj" />
+    <Resource Include="Assets/App.ico" />
   </ItemGroup>
 </Project>

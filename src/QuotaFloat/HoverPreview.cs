@@ -25,6 +25,7 @@ internal static class HoverPreview
         var now = DateTimeOffset.Now;
         var gauge = new QuotaGauge();
         gauge.Update(accounts, "演示", now, false, false);
+        gauge.SetTraffic(new TrafficSnapshot(4310, 18, [0, 320, 170, 650, 120, 0, 930, 440, 170, 780, 220, 510], now));
         gauge.Scroll(selected);
         if (gauge.Width != 32 || gauge.Viewport.VisibleCount > 10 ||
             gauge.Viewport.Selected != selected)
@@ -37,7 +38,7 @@ internal static class HoverPreview
         panel.Measure(new Size(304, 1000));
         if (panel.DesiredSize.Height >= 230)
             throw new InvalidOperationException("单账号悬停卡高度超出约束");
-        var root = new Canvas { Width = 400, Height = 280,
+        var root = new Canvas { Width = 400, Height = 336,
             Background = new LinearGradientBrush(Color.FromRgb(231, 238, 235), Color.FromRgb(247, 245, 239), 35) };
         Canvas.SetLeft(gauge, 24);
         Canvas.SetTop(gauge, 28);
@@ -45,10 +46,10 @@ internal static class HoverPreview
         Canvas.SetLeft(panel, 72);
         Canvas.SetTop(panel, 48);
         root.Children.Add(panel);
-        root.Measure(new Size(400, 280));
-        root.Arrange(new Rect(0, 0, 400, 280));
+        root.Measure(new Size(400, 336));
+        root.Arrange(new Rect(0, 0, 400, 336));
         root.UpdateLayout();
-        var bitmap = new RenderTargetBitmap(400, 280, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap(400, 336, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(root);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));

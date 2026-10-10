@@ -13,6 +13,8 @@ public partial class DetailWindow : Window
     private int page;
     private bool updating;
     private DateTimeOffset now;
+    private bool sorting;
+    public event Action<string, int>? OrderRequested;
     public event Action? RefreshRequested;
     public event Action? SettingsRequested;
     public event Action? CollapseRequested;
@@ -23,6 +25,7 @@ public partial class DetailWindow : Window
     public DetailWindow()
     {
         InitializeComponent();
+        Icon = (System.Windows.Media.ImageSource)FindResource("AppIcon");
         PreviewKeyDown += OnKeyDown;
     }
 
@@ -53,14 +56,14 @@ public partial class DetailWindow : Window
         TopmostToggle.IsChecked = topmost;
         PinDetails.IsChecked = pinned;
         updating = false;
-        RenderRows();
+        if (!sorting) RenderRows();
     }
 
     /// <summary>按当前工作区限制详情高度，短屏允许滚动。</summary>
     public void FitToWorkArea(Rect area)
     {
         Width = Math.Min(600, area.Width - 20);
-        RowScroller.MaxHeight = Math.Max(60, area.Height - 380);
+        RowScroller.MaxHeight = Math.Max(60, area.Height - 430);
         MaxHeight = area.Height;
     }
 
@@ -85,15 +88,38 @@ public partial class DetailWindow : Window
         RowScroller.ScrollToTop();
     }
 
+    /// <summary>排序完成后显示目标所在页，避免账号移动后无法看到结果。</summary>
+    public void ShowOrderDestination(int destination, int count)
+    {
+        page = Math.Clamp(destination, 0, Math.Max(0, count - 1)) / 10;
+        RowScroller.ScrollToTop();
+    }
+
     private void RenderRows()
     {
+        var focused = Rows.Children.OfType<AccountRow>().FirstOrDefault(row => row.IsKeyboardFocusWithin)?.AccountId;
         Rows.Children.Clear();
         var visible = QuotaMath.Page(accounts, page);
         for (var i = 0; i < visible.Count; i++)
-            Rows.Children.Add(new AccountRow(visible[i], page * 10 + i + 1, now));
+        {
+            var row = new AccountRow(visible[i], page * 10 + i + 1, now);
+            row.OrderRequested += destination => OrderRequested?.Invoke(row.AccountId, destination);
+            row.SortingChanged += active => sorting = active;
+            row.AccountCount = accounts.Count;
+            Rows.Children.Add(row);
+            if (row.AccountId == focused) row.Focus();
+        }
         PageLabel.Text = $"{page + 1} / {Math.Max(1, (accounts.Count + 9) / 10)}";
         Previous.IsEnabled = page > 0;
         Next.IsEnabled = (page + 1) * 10 < accounts.Count;
+    }
+
+    /// <summary>独立展示最近60秒CPA全局请求统计；未知不显示为零。</summary>
+    public void SetTraffic(TrafficSnapshot value, bool demo)
+    {
+        TrafficLabel.Text = value.Tokens is null ? "流量未接入 · " + (value.Error ?? "等待只读统计快照") :
+            $"{(demo ? "演示流量" : "CPA全局")} · 最近60秒 {value.TokenLabel} Token / {value.Requests} 次";
+        TrafficLabel.ToolTip = value.UpdatedAt is { } time ? $"截至 {time.LocalDateTime:HH:mm:ss}，仅已完成请求；每5秒一格" : value.Error;
     }
 
     private void PinChanged(object sender, RoutedEventArgs e) { if (!updating) PinRequested?.Invoke(PinDetails.IsChecked == true); }

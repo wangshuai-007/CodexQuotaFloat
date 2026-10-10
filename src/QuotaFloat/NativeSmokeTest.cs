@@ -16,10 +16,13 @@ public partial class MainWindow
         Show();
         await Task.Delay(400);
         Check(session.Accounts.Count == 3 && session.Error is null, "启动并读取3个演示账号", checks);
-        Check(Width == 48 && Height == 240 && Gauge.Width == 32, "窄浮窗尺寸48×240，水柱宽32", checks);
+        Check(Width == 48 && Height == 296 && Gauge.Width == 32, "窄浮窗尺寸48×296，水柱宽32", checks);
+        Check(Icon is not null && details.Icon is not null && peek.Icon is not null, "三个窗口使用应用图标", checks);
+        Check(traffic.Snapshot.Tokens > 0 && traffic.Snapshot.Requests == 18, "演示最近60秒流量已显示", checks);
         await CheckHoverAsync(checks);
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);
+        await CheckSortingAndTrafficAsync(checks);
         await CheckMonitorsAsync(checks);
         Directory.CreateDirectory(output);
         File.WriteAllLines(Path.Combine(output, "native-checks.txt"), checks.Append(

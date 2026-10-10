@@ -8,8 +8,8 @@ using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
-/// <summary>32×224的窄水柱，每行三色线代表一个账号，最多显示10个账号。</summary>
-public sealed class QuotaGauge : FrameworkElement
+/// <summary>32×280窄水柱，最多10组账号线，底部显示最近60秒流量。</summary>
+public sealed partial class QuotaGauge : FrameworkElement
 {
     public const double AccountsTop = 48;
     public const double AccountsHeight = 144;
@@ -33,7 +33,7 @@ public sealed class QuotaGauge : FrameworkElement
     public QuotaGauge()
     {
         Width = 32;
-        Height = 224;
+        Height = 280;
         Focusable = true;
         Cursor = System.Windows.Input.Cursors.Hand;
     }
@@ -84,7 +84,7 @@ public sealed class QuotaGauge : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
-        var capsule = new Rect(1, 1, 30, 222);
+        var capsule = new Rect(1, 1, 30, 278);
         dc.DrawRoundedRectangle(new LinearGradientBrush(ColorOf("#FFFFFF"), ColorOf("#E9F1F0"), 90),
             new Pen(BrushOf("#CEDDDF"), 1), capsule, 15, 15);
         dc.PushClip(new RectangleGeometry(capsule, 15, 15));
@@ -95,9 +95,10 @@ public sealed class QuotaGauge : FrameworkElement
         Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : "…", 16, 29, 9, Muted);
         DrawMeters(dc);
         Text(dc, $"{accounts.Count}", 16, 200, 10, Ink, "Bahnschrift");
-        dc.DrawRoundedRectangle(Muted, null, new Rect(11, 216, 10, 2), 1, 1);
+        DrawTraffic(dc);
+        dc.DrawRoundedRectangle(Muted, null, new Rect(11, 270, 10, 2), 1, 1);
         dc.Pop();
-        if (IsKeyboardFocused) dc.DrawRoundedRectangle(null, new Pen(Five, 1.5), new Rect(0.5, 0.5, 31, 223), 15, 15);
+        if (IsKeyboardFocused) dc.DrawRoundedRectangle(null, new Pen(Five, 1.5), new Rect(0.5, 0.5, 31, 279), 15, 15);
     }
 
     private void DrawMeters(DrawingContext dc)
@@ -120,14 +121,14 @@ public sealed class QuotaGauge : FrameworkElement
 
     private void DrawWater(DrawingContext dc)
     {
-        var y = 222 - Math.Clamp(Level, 0, 100) / 100 * 180;
+        var y = 278 - Math.Clamp(Level, 0, 100) / 100 * 236;
         var water = new StreamGeometry();
         using (var path = water.Open())
         {
             path.BeginFigure(new Point(0, y), true, true);
             path.BezierTo(new Point(10, y - 3), new Point(20, y + 3), new Point(32, y), true, false);
-            path.LineTo(new Point(32, 225), true, false);
-            path.LineTo(new Point(0, 225), true, false);
+            path.LineTo(new Point(32, 281), true, false);
+            path.LineTo(new Point(0, 281), true, false);
         }
         dc.DrawGeometry(new LinearGradientBrush(ColorOf("#C5E9E8"), ColorOf("#69BCC6"), 90)
             { Opacity = stale ? 0.28 : 0.72 }, null, water);

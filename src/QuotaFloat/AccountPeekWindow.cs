@@ -14,6 +14,7 @@ public sealed class AccountPeekWindow : Window
 
     public AccountPeekWindow()
     {
+        Icon = (ImageSource)Application.Current.FindResource("AppIcon");
         Width = 304;
         SizeToContent = SizeToContent.Height;
         WindowStyle = WindowStyle.None;

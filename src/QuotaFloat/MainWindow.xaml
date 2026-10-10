@@ -1,7 +1,7 @@
 <Window x:Class="QuotaFloat.MainWindow"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:QuotaFloat"
- Title="Codex 额度浮窗" Width="48" Height="240" WindowStyle="None" ResizeMode="NoResize"
+ Title="Codex 额度浮窗" Width="48" Height="296" WindowStyle="None" ResizeMode="NoResize"
  AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False">
  <Border Margin="8" Background="Transparent" MouseEnter="GaugeEntered" MouseLeave="GaugeLeft"
   PreviewMouseLeftButtonDown="GaugePressed" PreviewMouseLeftButtonUp="GaugeReleased" MouseMove="GaugeMoved" PreviewMouseWheel="GaugeWheel">

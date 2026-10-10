@@ -6,4 +6,4 @@ commands:
   - dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
   - dotnet publish "src/QuotaFloat/QuotaFloat.csproj" -c Release --self-contained false -o "dist"
   - dotnet "dist/CodexQuotaFloat.dll" --render-preview "artifacts"
-  - dotnet "dist/CodexQuotaFloat.dll" --smoke-test "artifacts/native-final"
+  - Start-Process -FilePath "dist/CodexQuotaFloat.exe" -ArgumentList '--smoke-test "artifacts/native-final"' -WindowStyle Hidden -Wait

@@ -16,7 +16,7 @@ public partial class MainWindow
     {
         hoverTimer.Stop();
         var selected = Gauge.Viewport.Selected;
-        var id = selected >= 0 && selected < session.Accounts.Count ? session.Accounts[selected].Id : null;
+        var id = selected >= 0 && selected < DisplayAccounts.Count ? DisplayAccounts[selected].Id : null;
         if (!peek.IsVisible || peek.AccountId != id) UpdatePeek();
         PositionPeek();
         peek.Reveal(settings.ReducedMotion);
@@ -26,9 +26,9 @@ public partial class MainWindow
     private void UpdatePeek()
     {
         var selected = Gauge.Viewport.Selected;
-        var account = selected >= 0 && selected < session.Accounts.Count ? session.Accounts[selected] : null;
+        var account = selected >= 0 && selected < DisplayAccounts.Count ? DisplayAccounts[selected] : null;
         peek.Topmost = settings.AlwaysOnTop;
-        peek.Update(account, selected, session.Accounts.Count, settings.UseDemo, session.Error, session.Loading);
+        peek.Update(account, selected, DisplayAccounts.Count, settings.UseDemo, session.Error, session.Loading);
     }
 
     private void PositionPeek()

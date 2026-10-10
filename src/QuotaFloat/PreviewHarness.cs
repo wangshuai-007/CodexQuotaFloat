@@ -22,11 +22,17 @@ public static class PreviewHarness
             var details = new DetailWindow();
             details.FitToWorkArea(new Rect(0, 0, 1600, count >= 10 ? 1700 : 1000));
             details.Update(accounts, true, true, false, null, false, now);
+            details.SetTraffic(new TrafficSnapshot(4310, 18, [], now), true);
             Assert(details.VisibleAccountCount == Math.Min(10, count), $"详情最多10行：{count}账号", report);
             Assert(details.Topmost, "置顶属性打开", report);
             details.Topmost = false;
             Assert(!details.Topmost, "置顶属性关闭", report);
             SaveScene(details, accounts, $"preview-{count}.png", output, null);
+            if (count == 3)
+            {
+                foreach (var row in details.Rows.Children.OfType<AccountRow>()) row.ShowActionsForPreview();
+                SaveScene(details, accounts, "preview-sort.png", output, null);
+            }
             if (count == 12)
             {
                 details.ChangePage(1);
@@ -92,6 +98,7 @@ public static class PreviewHarness
         Canvas.SetLeft(title, 28); Canvas.SetTop(title, 24); root.Children.Add(title);
         var gauge = new QuotaGauge();
         gauge.Update(accounts, state ?? "演示", DateTimeOffset.Now, state == "连接失败", false);
+        if (state is null) gauge.SetTraffic(new TrafficSnapshot(4310, 18, [0, 320, 170, 650, 120, 0, 930, 440, 170, 780, 220, 510], DateTimeOffset.Now));
         Canvas.SetLeft(gauge, 30); Canvas.SetTop(gauge, 100); root.Children.Add(gauge);
         Canvas.SetLeft(panel, 158); Canvas.SetTop(panel, 58); root.Children.Add(panel);
         root.Measure(new Size(root.Width, root.Height));

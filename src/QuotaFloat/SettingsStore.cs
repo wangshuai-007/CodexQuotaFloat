@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
@@ -11,6 +12,8 @@ public sealed class AppSettings
     public bool ReducedMotion { get; set; }
     public int DemoCount { get; set; } = 3;
     public int RefreshSeconds { get; set; } = 60;
+    public string TrafficSnapshotUrl { get; set; } = "";
+    public List<string> AccountOrder { get; set; } = [];
     public string ManagementUrl { get; set; } = "http://127.0.0.1:8317/v8/management";
     public double? Left { get; set; }
     public double? Top { get; set; }
@@ -31,7 +34,8 @@ public static class SettingsStore
             var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(PathName))
                 ?? throw new JsonException();
             settings.DemoCount = Math.Clamp(settings.DemoCount, 0, 100);
-            settings.RefreshSeconds = Math.Clamp(settings.RefreshSeconds, 30, 3600);
+            settings.RefreshSeconds = RefreshInterval.Clamp(settings.RefreshSeconds);
+            settings.AccountOrder = (settings.AccountOrder ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
             if (settings.Left is { } x && !double.IsFinite(x)) settings.Left = null;
             if (settings.Top is { } y && !double.IsFinite(y)) settings.Top = null;
             return (settings, null);
