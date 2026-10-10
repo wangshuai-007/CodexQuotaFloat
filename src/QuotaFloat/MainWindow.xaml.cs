@@ -63,6 +63,10 @@ public partial class MainWindow : Window
         details.MouseLeave += (_, _) => hoverTimer.Start();
         peek.MouseEnter += (_, _) => hoverTimer.Stop();
         peek.MouseLeave += (_, _) => hoverTimer.Start();
+        peek.DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(PositionVisiblePanels));
+        details.DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(PositionVisiblePanels));
+        peek.SizeChanged += (_, _) => { if (peek.IsVisible) PositionPeek(); };
+        details.SizeChanged += (_, _) => { if (details.IsVisible) PositionDetails(); };
     }
 
     private void WireTimers()
@@ -138,10 +142,7 @@ public partial class MainWindow : Window
         var area = ScreenPlacement.WorkArea(this);
         details.FitToWorkArea(area);
         details.UpdateLayout();
-        var height = details.ActualHeight > 0 ? details.ActualHeight : 550;
-        var point = ScreenPlacement.Detail(area, new Rect(Left, Top, Width, Height), details.Width, height);
-        details.Left = point.X;
-        details.Top = point.Y;
+        NativePlacement.PlacePopup(this, details);
     }
 
     private void Expand(bool focus = false)

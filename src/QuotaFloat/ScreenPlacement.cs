@@ -10,13 +10,13 @@ public static class ScreenPlacement
     /// <summary>将当前屏幕物理工作区转换为当前WPF窗口使用的逻辑单位。</summary>
     public static Rect WorkArea(Window window)
     {
-        var handle = new WindowInteropHelper(window).Handle;
-        var screen = handle == IntPtr.Zero ? System.Windows.Forms.Screen.PrimaryScreen! :
-            System.Windows.Forms.Screen.FromHandle(handle);
-        var area = screen.WorkingArea;
-        var dpi = VisualTreeHelper.GetDpi(window);
-        return new Rect(area.Left / dpi.DpiScaleX, area.Top / dpi.DpiScaleY,
-            area.Width / dpi.DpiScaleX, area.Height / dpi.DpiScaleY);
+        var area = NativePlacement.WorkArea(window);
+        var bounds = NativePlacement.Bounds(window);
+        var scale = NativePlacement.Scale(window);
+        // 仅把相对窗口的偏移换算为DIP，不缩放虚拟桌面的全局原点。
+        return new Rect(window.Left + (area.Left - bounds.Left) / scale,
+            window.Top + (area.Top - bounds.Top) / scale,
+            area.Width / scale, area.Height / scale);
     }
 
     /// <summary>约束窗口完全可见，允许负坐标显示器。</summary>

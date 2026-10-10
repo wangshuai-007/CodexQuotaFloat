@@ -20,9 +20,10 @@ public partial class MainWindow
         await CheckHoverAsync(checks);
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);
+        await CheckMonitorsAsync(checks);
         Directory.CreateDirectory(output);
         File.WriteAllLines(Path.Combine(output, "native-checks.txt"), checks.Append(
-            "限制：真实窗口及事件路径验证，未进行系统物理鼠标操作或多屏混合DPI验收。"), new UTF8Encoding(false));
+            "限制：真实窗口与实际显示器事件路径验证，包括跨屏定位；未进行系统物理鼠标操作或人工验收。"), new UTF8Encoding(false));
         Close();
     }
 

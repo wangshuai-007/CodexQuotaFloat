@@ -36,10 +36,7 @@ public partial class MainWindow
         var area = ScreenPlacement.WorkArea(this);
         peek.Width = Math.Min(304, area.Width - 16);
         peek.UpdateLayout();
-        var height = peek.ActualHeight > 0 ? peek.ActualHeight : 196;
-        var point = ScreenPlacement.Detail(area, new Rect(Left + 8, Top + 8 + Gauge.SelectedY, 32, 1), peek.Width, height);
-        peek.Left = point.X;
-        peek.Top = point.Y;
+        NativePlacement.PlacePopup(this, peek, Gauge.SelectedY);
     }
 
     private void PositionVisiblePanels()

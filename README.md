@@ -63,8 +63,8 @@ dotnet publish "src/QuotaFloat/QuotaFloat.csproj" -c Release --self-contained fa
 
 `--demo` 可在启动时强制演示模式，不访问网络。`--render-preview` 使用真实WPF组件离线生成PNG及UI验证记录，不读取本地设置、不接入CPA，也不打开浮窗。
 
-自动验证包含82项额度/CPA/账号视口逻辑检查、23项WPF布局/几何检查、20项真实Windows窗口冒烟检查。原生冒烟检查已验证窄浮窗尺寸、上下位置切换单账号、高精度滚轮累积、超过10个账号滚动、刷新保持位置、点击才打开全部列表、Owner关系、Windows置顶标志开关、右边停靠、向内展开与Escape收起。真实物理鼠标跨窗移动/拖动及多显示器混合DPI仍需实屏验收，不能由离线截图或事件模拟替代。
+自动验证包含82项额度/CPA/账号视口逻辑检查、23项WPF布局/几何检查、当前双屏环境36项真实Windows窗口冒烟检查（其中16项为多屏回归，数量随显示器数量变化）。原生冒烟检查已验证窄浮窗尺寸、上下位置切换单账号、高精度滚轮累积、超过10个账号滚动、刷新保持位置、点击才打开全部列表、Owner关系、Windows置顶标志开关、右边停靠、向内展开与Escape收起。已用实际exe验证主屏150%、副屏100%缩放：两屏左右下角悬停/点击、面板跨屏跟随均通过。真实物理鼠标跨窗移动/拖动仍需人工验收，事件模拟不能替代物理鼠标操作。
 
-原生冒烟检查命令：`dotnet "dist/CodexQuotaFloat.dll" --smoke-test "artifacts/native-final"`。该模式短暂创建真实窗口，不保存设置，不接入CPA，不操作系统鼠标。
+原生冒烟检查应运行带PerMonitorV2清单的exe：`Start-Process -FilePath "dist/CodexQuotaFloat.exe" -ArgumentList '--smoke-test "artifacts/native-final"' -WindowStyle Hidden -Wait`。不要用dotnet加载DLL验证混合DPI，因为宿主进程清单不同。该模式短暂创建真实窗口，不保存设置，不接入CPA，不操作系统鼠标。
 
 设置位置：`%LOCALAPPDATA%/CodexQuotaFloat/settings.json`。只包含本地界面选项，不包含密钥和账号快照。
