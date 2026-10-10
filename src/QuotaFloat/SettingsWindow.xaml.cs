@@ -13,14 +13,14 @@ public partial class SettingsWindow : Window
     public SettingsWindow(AppSettings current, string managementKey)
     {
         Result = current;
-        ManagementKey = managementKey;
+        ManagementKey = string.IsNullOrWhiteSpace(managementKey) ? ManagementKeyResolver.Read() : managementKey;
         InitializeComponent();
         TopmostOption.IsChecked = current.AlwaysOnTop;
         DockOption.IsChecked = current.DockToEdge;
         MotionOption.IsChecked = current.ReducedMotion;
         DemoCountOption.Text = current.DemoCount.ToString();
         UrlOption.Text = current.ManagementUrl;
-        KeyOption.Password = managementKey;
+        KeyOption.Password = ManagementKey;
         IntervalOption.Text = current.RefreshSeconds.ToString();
         SourceOption.SelectedIndex = current.UseDemo ? 0 : 1;
     }

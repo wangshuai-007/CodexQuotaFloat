@@ -40,7 +40,7 @@ Windows 10/11 原生 WPF 额度仪表，首版默认使用假数据，不自动�
 - 默认新版：`http://127.0.0.1:8317/v8/management`。
 - 已有旧版/Plus分支：可显式填写 `http://127.0.0.1:8317/v0/management`；不会静默探测或回退。
 - 远程地址必须为HTTPS；仅本机允许HTTP；禁用HTTP重定向，防止密钥被转发。
-- 密钥仅保留本次会话；也可自行设置 `CPA_MANAGEMENT_KEY` 环境变量后启动。密钥不得写入代码或提交到版本库。
+- 密钥仅保留本次会话；也可设置 `CPA_MANAGEMENT_KEY`。启动读取优先级为进程→Windows用户→系统环境变量，双击启动不依赖资源管理器刷新环境；当前会话密钥为空时重新打开设置也会再次读取。密钥不得写入代码或提交到版本库。
 - 新版读取 `GET /credentials`，旧版读取 `GET /auth-files`，只选择启用的Codex账号。
 - 通过管理服务的 `POST /requests/api-call`（新版）或 `POST /api-call`（旧版），由CPA使用其账号凭据代理查询Codex usage。浮窗不下载凭据、不读取本地OAuth token、不重置额度。
 - 剩余窗口按 `limit_window_seconds` 识别5h/周，将 `used_percent` 转为剩余值。缺失字段不默认满额。
@@ -63,7 +63,7 @@ dotnet publish "src/QuotaFloat/QuotaFloat.csproj" -c Release --self-contained fa
 
 `--demo` 可在启动时强制演示模式，不访问网络。`--render-preview` 使用真实WPF组件离线生成PNG及UI验证记录，不读取本地设置、不接入CPA，也不打开浮窗。
 
-自动验证包含82项额度/CPA/账号视口逻辑检查、23项WPF布局/几何检查、当前双屏环境36项真实Windows窗口冒烟检查（其中16项为多屏回归，数量随显示器数量变化）。原生冒烟检查已验证窄浮窗尺寸、上下位置切换单账号、高精度滚轮累积、超过10个账号滚动、刷新保持位置、点击才打开全部列表、Owner关系、Windows置顶标志开关、右边停靠、向内展开与Escape收起。已用实际exe验证主屏150%、副屏100%缩放：两屏左右下角悬停/点击、面板跨屏跟随均通过。真实物理鼠标跨窗移动/拖动仍需人工验收，事件模拟不能替代物理鼠标操作。
+自动验证包含90项额度/CPA/账号视口/密钥读取逻辑检查、23项WPF布局/几何检查、当前双屏环境36项真实Windows窗口冒烟检查（其中16项为多屏回归，数量随显示器数量变化）。原生冒烟检查已验证窄浮窗尺寸、上下位置切换单账号、高精度滚轮累积、超过10个账号滚动、刷新保持位置、点击才打开全部列表、Owner关系、Windows置顶标志开关、右边停靠、向内展开与Escape收起。已用实际exe验证主屏150%、副屏100%缩放：两屏左右下角悬停/点击、面板跨屏跟随均通过。真实物理鼠标跨窗移动/拖动仍需人工验收，事件模拟不能替代物理鼠标操作。
 
 原生冒烟检查应运行带PerMonitorV2清单的exe：`Start-Process -FilePath "dist/CodexQuotaFloat.exe" -ArgumentList '--smoke-test "artifacts/native-final"' -WindowStyle Hidden -Wait`。不要用dotnet加载DLL验证混合DPI，因为宿主进程清单不同。该模式短暂创建真实窗口，不保存设置，不接入CPA，不操作系统鼠标。
 

@@ -114,6 +114,7 @@ Check("允许本机管理地址", CpaQuotaSource.ValidateUrl("http://127.0.0.1:8
 Check("允许远端HTTPS", CpaQuotaSource.ValidateUrl("https://example.com/v8/management").Scheme == "https");
 passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
+passed += ManagementKeyTests.Run();
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

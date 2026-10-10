@@ -57,7 +57,7 @@ public partial class App : Application
         }
         var (settings, warning) = SettingsStore.Load();
         if (e.Args.Contains("--demo")) settings.UseDemo = true;
-        var key = Environment.GetEnvironmentVariable("CPA_MANAGEMENT_KEY") ?? "";
+        var key = QuotaFloat.Core.ManagementKeyResolver.Read();
         var window = new MainWindow(settings, key);
         MainWindow = window;
         window.Show();
