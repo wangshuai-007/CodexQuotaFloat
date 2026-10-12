@@ -57,7 +57,7 @@ public partial class App : Application
         }
         var (settings, warning) = SettingsStore.Load();
         if (e.Args.Contains("--demo")) settings.UseDemo = true;
-        var key = QuotaFloat.Core.ManagementKeyResolver.Read();
+        var key = settings.UseLocalAuth && !settings.UseDemo ? "" : QuotaFloat.Core.ManagementKeyResolver.Read();
         var window = new MainWindow(settings, key);
         MainWindow = window;
         window.Show();

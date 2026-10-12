@@ -3,6 +3,9 @@ using System.Text;
 using System.Text.Json;
 using QuotaFloat.Core;
 
+if (args.SequenceEqual(new[] { "app-server" })) { await FakeCodexServer.RunAsync(); return; }
+if (args.Contains("--check-local-auth")) { await LocalAuthLiveCheck.RunAsync(); return; }
+
 var now = new DateTimeOffset(2026, 10, 10, 16, 30, 0, TimeSpan.FromHours(8));
 var passed = 0;
 void Check(string name, bool condition)
@@ -116,6 +119,8 @@ passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
 passed += ManagementKeyTests.Run();
 passed += await TrafficOrderingTests.RunAsync();
+passed += await LocalAuthTests.RunAsync();
+passed += await CodexCliTests.RunAsync();
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

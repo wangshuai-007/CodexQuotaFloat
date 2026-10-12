@@ -31,7 +31,7 @@ public partial class DetailWindow : Window
 
     /// <summary>刷新信息与错误提示，不覆盖分页位置。</summary>
     public void Update(IReadOnlyList<AccountQuota> values, bool demo, bool topmost, bool pinned,
-        string? error, bool loading, DateTimeOffset? refreshed)
+        string? error, bool loading, DateTimeOffset? refreshed, bool local = false)
     {
         accounts = values;
         now = DateTimeOffset.Now;
@@ -40,11 +40,11 @@ public partial class DetailWindow : Window
         var valid = values.Count(a => a.Available(now) is not null);
         WaterLabel.Text = level is { } percent ? $"{percent:0}" : "—";
         CountLabel.Text = $"{values.Count} 个账号 · {valid} 个计入水位";
-        SourceLabel.Text = $"{(demo ? "演示数据 · 未连接 CPA" : "CPA 管理额度")}   /   " +
+        SourceLabel.Text = $"{(demo ? "演示数据 · 未连接 CPA" : local ? "本地Codex认证 · 直接查询" : "CPA 管理额度")}   /   " +
             (refreshed is { } time ? $"更新于 {time.LocalDateTime:HH:mm:ss}" : "尚未更新");
         Notice.Text = error is not null ? error + (values.Count > 0 ? "；下方为上次快照，不代表当前额度。" : "") :
             loading ? "正在读取额度，保留上一份数据…" :
-            values.Count == 0 ? "暂无 Codex 账号。演示账号数量可在设置中调整；CPA 模式请检查账号是否启用。" :
+            values.Count == 0 ? local ? "暂无本地账号额度；请检查ChatGPT登录及认证文件。" : "暂无 Codex 账号。演示账号数量可在设置中调整；CPA 模式请检查账号是否启用。" :
             valid != values.Count ? $"{values.Count - valid} 个账号失败、缺少窗口或已到期，不计入总体水位。" :
             demo ? "当前为假数据。百分比参考示例，邮箱已匿名化；重置时间为相对演示时间。" :
             "只读取额度，不重置、不修改账号；7d 显示固定 7 天周期的已走过时间。";

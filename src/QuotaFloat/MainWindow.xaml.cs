@@ -140,19 +140,22 @@ public partial class MainWindow : Window
     private void UpdateViews()
     {
         DisplayAccounts = AccountOrdering.Apply(session.Accounts, settings.AccountOrder);
-        var label = session.Loading ? "读取中" : session.Error is not null ? "连接失败" : settings.UseDemo ? "演示" : "CPA";
+        var label = session.Loading ? "读取中" : session.Error is not null ? "连接失败" : settings.UseDemo ? "演示" : settings.UseLocalAuth ? "本地" : "CPA";
         Gauge.Update(DisplayAccounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
         details.Update(DisplayAccounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
-            session.Error, session.Loading, session.UpdatedAt);
+            session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo);
         tray.Text = $"Codex 额度浮窗 · {label}";
         if (peek.IsVisible) UpdatePeek();
         PositionVisiblePanels();
         UpdateTraffic();
     }
 
-    private Task RefreshAll(bool manual = false) => Task.WhenAll(
-        manual || !session.AutoRefreshPaused ? session.RefreshAsync() : Task.CompletedTask,
-        traffic.RefreshAsync(manual));
+    private Task RefreshAll(bool manual = false)
+    {
+        if (manual) session.PrepareManualRefresh();
+        return Task.WhenAll(manual || !session.AutoRefreshPaused ? session.RefreshAsync() : Task.CompletedTask,
+            traffic.RefreshAsync(manual));
+    }
 
     private void UpdateTraffic()
     {

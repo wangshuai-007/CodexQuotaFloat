@@ -13,6 +13,7 @@ public sealed class QuotaSession : IDisposable
     private int version;
     private AppSettings settings;
     private string key;
+    private IQuotaSource? source;
     public IReadOnlyList<AccountQuota> Accounts { get; private set; } = [];
     public string? Error { get; private set; }
     public bool Loading { get; private set; }
@@ -28,6 +29,8 @@ public sealed class QuotaSession : IDisposable
     {
         version++;
         requestCancellation.Cancel();
+        (source as IDisposable)?.Dispose();
+        source = null;
         requestCancellation.Dispose();
         requestCancellation = new CancellationTokenSource();
         settings = options;
@@ -51,9 +54,10 @@ public sealed class QuotaSession : IDisposable
         Changed?.Invoke();
         try
         {
-            IQuotaSource source = settings.UseDemo ? new DemoQuotaSource(settings.DemoCount) :
+            var active = source ??= settings.UseDemo ? new DemoQuotaSource(settings.DemoCount) :
+                settings.UseLocalAuth ? LocalSource() :
                 new CpaQuotaSource(http, settings.ManagementUrl, key);
-            var items = await source.ReadAsync(token);
+            var items = await active.ReadAsync(token);
             if (current != version) return;
             Accounts = items;
             UpdatedAt = DateTimeOffset.Now;
@@ -61,11 +65,11 @@ public sealed class QuotaSession : IDisposable
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
         catch (Exception error) when (error is HttpRequestException or System.Text.Json.JsonException or
-            FormatException or ArgumentException or OperationCanceledException)
+            FormatException or ArgumentException or OperationCanceledException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or ObjectDisposedException)
         {
             if (current != version) return;
-            Error = CpaQuotaSource.SafeError(error);
-            AutoRefreshPaused = error is ArgumentException ||
+            Error = settings.UseLocalAuth && !settings.UseDemo ? LocalCodexQuotaSource.SafeError(error) : CpaQuotaSource.SafeError(error);
+            AutoRefreshPaused = error is ArgumentException || settings.UseLocalAuth && error is FormatException ||
                 error is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden };
         }
         finally
@@ -81,5 +85,20 @@ public sealed class QuotaSession : IDisposable
         requestCancellation.Cancel();
         requestCancellation.Dispose();
         http.Dispose();
+        (source as IDisposable)?.Dispose();
+    }
+
+    private IQuotaSource LocalSource()
+    {
+        var cli = string.IsNullOrWhiteSpace(settings.LocalAuthPath) ? LocalCodexCli.Find() : null;
+        return cli is null ? new LocalCodexQuotaSource(http, settings.LocalAuthPath) : new CodexCliQuotaSource(cli);
+    }
+
+    /// <summary>手动刷新重新连接本地CLI，及时读取其它程序更新的登录状态。</summary>
+    public void PrepareManualRefresh()
+    {
+        if (Loading || !settings.UseLocalAuth || settings.UseDemo) return;
+        (source as IDisposable)?.Dispose();
+        source = null;
     }
 }

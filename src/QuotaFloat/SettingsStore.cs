@@ -7,6 +7,8 @@ namespace QuotaFloat;
 public sealed class AppSettings
 {
     public bool UseDemo { get; set; } = true;
+    public bool UseLocalAuth { get; set; }
+    public string LocalAuthPath { get; set; } = "";
     public bool AlwaysOnTop { get; set; } = true;
     public bool DockToEdge { get; set; } = true;
     public bool ReducedMotion { get; set; }

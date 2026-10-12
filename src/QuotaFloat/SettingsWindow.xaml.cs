@@ -13,7 +13,8 @@ public partial class SettingsWindow : Window
     public SettingsWindow(AppSettings current, string managementKey)
     {
         Result = current;
-        ManagementKey = string.IsNullOrWhiteSpace(managementKey) ? ManagementKeyResolver.Read() : managementKey;
+        ManagementKey = current.UseLocalAuth && !current.UseDemo ? managementKey :
+            string.IsNullOrWhiteSpace(managementKey) ? ManagementKeyResolver.Read() : managementKey;
         InitializeComponent();
         Icon = (System.Windows.Media.ImageSource)FindResource("AppIcon");
         TopmostOption.IsChecked = current.AlwaysOnTop;
@@ -24,27 +25,50 @@ public partial class SettingsWindow : Window
         KeyOption.Password = ManagementKey;
         IntervalOption.Text = current.RefreshSeconds.ToString();
         TrafficUrlOption.Text = current.TrafficSnapshotUrl;
-        SourceOption.SelectedIndex = current.UseDemo ? 0 : 1;
+        LocalAuthOption.Text = current.LocalAuthPath;
+        try { DefaultAuthLabel.Text = "自动：已安装的Codex CLI；无CLI时读取 " + LocalCodexAuth.ResolvePath(null); }
+        catch (ArgumentException) { DefaultAuthLabel.Text = "默认CODEX_HOME路径无效，请手动选择认证文件。"; }
+        SourceOption.SelectedIndex = current.UseDemo ? 0 : current.UseLocalAuth ? 2 : 1;
     }
 
     private void SourceChanged(object sender, SelectionChangedEventArgs e)
     {
         if (UrlOption is null) return;
         var real = SourceOption.SelectedIndex == 1;
+        if (real && string.IsNullOrWhiteSpace(KeyOption.Password)) KeyOption.Password = ManagementKeyResolver.Read();
+        var local = SourceOption.SelectedIndex == 2;
+        LocalAuthSection.Visibility = local ? Visibility.Visible : Visibility.Collapsed;
+        DemoSection.Visibility = SourceOption.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CpaSection.Visibility = local ? Visibility.Collapsed : Visibility.Visible;
+        TrafficSection.Visibility = local ? Visibility.Collapsed : Visibility.Visible;
         UrlOption.IsEnabled = real;
         KeyOption.IsEnabled = real;
         TrafficUrlOption.IsEnabled = real;
-        DemoCountOption.IsEnabled = !real;
+        DemoCountOption.IsEnabled = SourceOption.SelectedIndex == 0;
+    }
+
+    private void BrowseAuthClicked(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "选择本地Codex认证文件",
+            Filter = "JSON认证文件 (*.json)|*.json", CheckFileExists = true, Multiselect = false };
+        if (dialog.ShowDialog(this) == true) LocalAuthOption.Text = dialog.FileName;
     }
 
     private void SaveClicked(object sender, RoutedEventArgs e)
     {
-        if (!int.TryParse(DemoCountOption.Text, out var count) || count is < 0 or > 100)
+        var count = Result.DemoCount;
+        if (SourceOption.SelectedIndex == 0 && (!int.TryParse(DemoCountOption.Text, out count) || count is < 0 or > 100))
         { ValidationError.Text = "演示账号数量须为 0–100 的整数。"; DemoCountOption.Focus(); return; }
         if (!int.TryParse(IntervalOption.Text, out var interval) || !RefreshInterval.IsValid(interval))
         { ValidationError.Text = "刷新间隔须为 5–3600 秒的整数。"; IntervalOption.Focus(); return; }
         var demo = SourceOption.SelectedIndex == 0;
-        if (!demo)
+        var local = SourceOption.SelectedIndex == 2;
+        if (local)
+        {
+            try { LocalCodexAuth.ResolvePath(LocalAuthOption.Text); }
+            catch (ArgumentException) { ValidationError.Text = "请输入本机认证文件的完整路径，或留空使用默认位置。"; LocalAuthOption.Focus(); return; }
+        }
+        if (!demo && !local)
         {
             try { CpaQuotaSource.ValidateUrl(UrlOption.Text); }
             catch (ArgumentException error) { ValidationError.Text = error.Message; UrlOption.Focus(); return; }
@@ -58,7 +82,8 @@ public partial class SettingsWindow : Window
         }
         var next = new AppSettings
         {
-            UseDemo = demo, AlwaysOnTop = TopmostOption.IsChecked == true,
+            UseDemo = demo, UseLocalAuth = local, LocalAuthPath = LocalAuthOption.Text.Trim(),
+            AlwaysOnTop = TopmostOption.IsChecked == true,
             DockToEdge = DockOption.IsChecked == true, ReducedMotion = MotionOption.IsChecked == true,
             DemoCount = count, RefreshSeconds = interval, ManagementUrl = UrlOption.Text.Trim().TrimEnd('/'),
             TrafficSnapshotUrl = TrafficUrlOption.Text.Trim(), AccountOrder = Result.AccountOrder.ToList(),

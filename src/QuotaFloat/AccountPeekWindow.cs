@@ -33,13 +33,13 @@ public sealed class AccountPeekWindow : Window
     }
 
     /// <summary>替换当前账号详情；显示剩余、时间进度、重置时刻与数据来源。</summary>
-    public void Update(AccountQuota? account, int index, int total, bool demo, string? error, bool loading)
+    public void Update(AccountQuota? account, int index, int total, bool demo, string? error, bool loading, bool local = false)
     {
         body.Children.Clear();
         AccountId = account?.Id;
         body.Children.Add(new TextBlock { Text = account?.Name ?? "暂无账号", FontSize = 14,
             FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = account?.Name });
-        body.Children.Add(new TextBlock { Text = $"{account?.Plan ?? "Codex"} · {(demo ? "演示" : "CPA")} · {Math.Max(0, index + 1)}/{total}",
+        body.Children.Add(new TextBlock { Text = $"{account?.Plan ?? "Codex"} · {(demo ? "演示" : local ? "本地Codex" : "CPA")} · {Math.Max(0, index + 1)}/{total}",
             FontSize = 11, Foreground = Resource("Muted"), Margin = new Thickness(0, 3, 0, 9) });
         if (account is not null)
         {

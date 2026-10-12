@@ -28,7 +28,7 @@ public partial class MainWindow
         var selected = Gauge.Viewport.Selected;
         var account = selected >= 0 && selected < DisplayAccounts.Count ? DisplayAccounts[selected] : null;
         peek.Topmost = settings.AlwaysOnTop;
-        peek.Update(account, selected, DisplayAccounts.Count, settings.UseDemo, session.Error, session.Loading);
+        peek.Update(account, selected, DisplayAccounts.Count, settings.UseDemo, session.Error, session.Loading, settings.UseLocalAuth && !settings.UseDemo);
     }
 
     private void PositionPeek()

@@ -92,7 +92,7 @@ public sealed partial class QuotaGauge : FrameworkElement
         for (var i = 0; i < 15; i++)
             dc.DrawLine(new Pen(BrushOf("#9CB5B9"), 0.7), new Point(3, 48 + i * 10), new Point(i % 5 == 0 ? 7 : 5, 48 + i * 10));
         Text(dc, unknown ? "—" : $"{Level:0}%", 16, 12, 11, Ink, "Bahnschrift");
-        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : "…", 16, 29, 9, Muted);
+        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 29, 9, Muted);
         DrawMeters(dc);
         Text(dc, $"{accounts.Count}", 16, 200, 10, Ink, "Bahnschrift");
         DrawTraffic(dc);

@@ -46,6 +46,7 @@ internal sealed class TrafficSession : IDisposable
         {
             var now = DateTimeOffset.Now;
             if (settings.UseDemo) Snapshot = Demo(now);
+            else if (settings.UseLocalAuth) Snapshot = TrafficSnapshot.Unknown("本地认证仅查询额度，不提供最近60秒Token/请求统计");
             else
             {
                 using var data = await new CpaTrafficSource(http, settings.ManagementUrl, key, settings.TrafficSnapshotUrl).ReadAsync(token);

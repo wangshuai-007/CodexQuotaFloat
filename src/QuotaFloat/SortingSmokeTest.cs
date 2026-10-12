@@ -38,6 +38,10 @@ public partial class MainWindow
         Check(traffic.Snapshot.Tokens is null && traffic.Snapshot.Error!.Contains("只读"), "v8无快照明确未接入，不消费队列", checks);
         traffic.Configure(settings, ""); await traffic.RefreshAsync();
         Check(RefreshInterval.IsValid(5), "设置共享验证允许5秒刷新", checks);
+        var local = new AppSettings { UseDemo = false, UseLocalAuth = true };
+        traffic.Configure(local, ""); await traffic.RefreshAsync();
+        Check(traffic.Snapshot.Tokens is null && traffic.Snapshot.Error!.Contains("本地认证"), "本地认证不查询CPA或伪造请求流量", checks);
+        traffic.Configure(settings, ""); await traffic.RefreshAsync();
     }
 
     private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
