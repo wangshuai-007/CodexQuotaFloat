@@ -31,7 +31,8 @@ internal static class TrafficRatePreview
         var gauge = new QuotaGauge(); gauge.SetTraffic(snapshot);
         Canvas.SetLeft(gauge, 64 + index * 160); Canvas.SetTop(gauge, 65); canvas.Children.Add(gauge);
         var details = new DetailWindow(); details.SetTraffic(snapshot, false);
-        if (!details.TrafficLabel.Text.Contains("Token/s") || !details.TrafficLabel.Text.Contains(snapshot.TokenRateLabel))
+        if (!details.TrafficLabel.Text.Contains("Token/s") || !details.TrafficLabel.Text.Contains(snapshot.TokenRateLabel) ||
+            details.TrafficLabel.Text.Contains("请求/s") || details.TrafficLabel.Text.Contains(" 次"))
             throw new InvalidOperationException("Token/s状态未正确显示");
         details.Close(); report.Add("通过：每秒速率状态显示：" + title.Text);
     }

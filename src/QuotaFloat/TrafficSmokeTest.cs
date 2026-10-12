@@ -20,8 +20,9 @@ public partial class MainWindow
                 "真实1秒定时器至少两次GET取数并计算Token/s，非重绘旧值", checks);
             Check(fixture.session.UpdatedAt is null && fixture.refreshTimer.Interval == TimeSpan.FromSeconds(60),
                 "1秒流量轮询不触发60秒额度轮询", checks);
-            Check(fixture.details.TrafficLabel.Text.Contains("Token/s") && fixture.details.TrafficLabel.Text.Contains("最近60秒"),
-                "详情独立更新速率和60秒累计", checks);
+            Check(fixture.details.TrafficLabel.Text.Contains("Token/s") && fixture.details.TrafficLabel.Text.Contains("最近60秒") &&
+                !fixture.details.TrafficLabel.Text.Contains("请求/s") && !fixture.details.TrafficLabel.Text.Contains(" 次"),
+                "详情仅显示Token速率和60秒Token累计，不显示请求次数", checks);
         }
         finally { fixture.Close(); }
         var calls = handler.Calls;

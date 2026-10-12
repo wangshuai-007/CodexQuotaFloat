@@ -19,6 +19,8 @@
 
 - [√] 任务10（AFK）：流量独立每秒取数、Token/s及请求/s、首帧/过期/真实采样时间处理；验证：新增采样逻辑及真实定时器只读GET、慢请求互斥、退出停止检查。
 
+- [√] 任务11（AFK）：移除水柱和详情请求次数指标，仅展示Token速率/累计/趋势，保持每秒同步；验证：三种速率状态和原生详情均断言无次数显示。
+
 ## Codex /goal 执行入口
 按 C:/Codes/CodexQuotaFloat/.helloagents/plans/20261010_quota-float/tasks.md 执行，遵守 requirements.md、plan.md、contract.json；/goal -> ~auto -> ~qa。真实 CPA 凭据仅在用户主动切换数据源时输入，当前演示交付不依赖该输入。
 

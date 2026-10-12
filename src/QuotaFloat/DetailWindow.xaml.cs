@@ -112,12 +112,12 @@ public partial class DetailWindow : Window
         Next.IsEnabled = (page + 1) * 10 < accounts.Count;
     }
 
-    /// <summary>独立展示Token/s、请求/s及最近60秒累计；未知不显示为零。</summary>
+    /// <summary>仅展示Token/s及最近60秒Token累计；未知不显示为零。</summary>
     public void SetTraffic(TrafficSnapshot value, bool demo)
     {
         TrafficLabel.Text = value.Tokens is null ? "流量未接入 · " + (value.Error ?? "等待只读统计快照") :
-            $"{(demo ? "演示流量" : "CPA全局")} · Token/s {value.TokenRateLabel} · 请求/s {value.RequestRateLabel}\n" +
-            $"最近60秒 {value.TokenLabel} Token / {value.Requests} 次" +
+            $"{(demo ? "演示流量" : "CPA全局")} · Token/s {value.TokenRateLabel}\n" +
+            $"最近60秒 {value.TokenLabel} Token" +
             (value.TokensPerSecond is null ? " · " + (value.Error ?? "首次采样，等待下一秒") : "");
         TrafficLabel.ToolTip = value.UpdatedAt is { } time ? $"截至 {time.LocalDateTime:HH:mm:ss}；每秒独立取快照，仅新增已完成请求；实际采样 {value.SampleSeconds:0.##}秒。趋势每5秒一格。" : value.Error;
     }
