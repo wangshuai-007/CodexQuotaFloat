@@ -13,9 +13,9 @@ internal static class WaterDesignPreview
     {
         Check(Contrast("#206A9D", "#FDFDFC") >= 4.5, "5h标签文字对比度至少4.5:1", report);
         Check(Contrast("#116C55", "#FDFDFC") >= 4.5, "7天标签文字对比度至少4.5:1", report);
-        var label = new FormattedText("5h 100%", CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface("Bahnschrift"), 7.8, Brushes.Black, 1);
-        Check(label.Width <= 28, "满额完整标签适合32px水柱", report);
+        var label = new FormattedText("5h", CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface("Segoe UI Variable Text"), 8, Brushes.Black, 1);
+        Check(label.Width <= 14, "双栏仅窗口标签适合半栏且无百分比", report);
         Render(75, 78, false, 0, "相近额度", output, report);
         Render(0, 100, false, 1, "零 / 满额", output, report);
         Render(null, 75, false, 2, "左侧未知", output, report);

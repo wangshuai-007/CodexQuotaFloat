@@ -43,10 +43,8 @@ public sealed partial class QuotaGauge
     {
         if (DisplayMode == QuotaDisplayMode.Split)
         {
-            Text(dc, "5h " + (fiveUnknown ? "—" : $"{Level:0}%"), 16, 8,
-                Level >= 99.5 ? 7.8 : 9, WaterFiveInk, "Bahnschrift");
-            Text(dc, "7d " + (weekUnknown ? "—" : $"{WeeklyLevel:0}%"), 16, 22,
-                WeeklyLevel >= 99.5 ? 7.8 : 9, WaterWeekInk, "Bahnschrift");
+            Text(dc, "5h", 8, 12, 8, WaterFiveInk);
+            Text(dc, "7d", 24, 12, 8, WaterWeekInk);
         }
         else
         {

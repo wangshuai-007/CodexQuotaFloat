@@ -6,12 +6,14 @@ namespace QuotaFloat;
 public partial class MainWindow
 {
     private bool trafficPeek;
+    private bool waterPeek;
 
     private void ShowPeekAt(double y)
     {
         if (dragging || settingsOpen || details.IsVisible || menu.IsOpen) return;
         trafficPeek = y >= 208 && y <= 268;
-        if (trafficPeek) Gauge.ClearHighlight();
+        waterPeek = !trafficPeek && (y < QuotaGauge.AccountsTop || y >= QuotaGauge.AccountsTop + QuotaGauge.AccountsHeight || DisplayAccounts.Count == 0);
+        if (trafficPeek || waterPeek) Gauge.ClearHighlight();
         else Gauge.SelectAt(y);
         RevealPeek();
     }
@@ -21,7 +23,8 @@ public partial class MainWindow
         hoverTimer.Stop();
         var selected = Gauge.Viewport.Selected;
         var id = selected >= 0 && selected < DisplayAccounts.Count ? DisplayAccounts[selected].Id : null;
-        if (!peek.IsVisible || peek.IsTraffic != trafficPeek || (!trafficPeek && peek.AccountId != id)) UpdatePeek();
+        if (!peek.IsVisible || peek.IsTraffic != trafficPeek || peek.IsWater != waterPeek ||
+            (!trafficPeek && !waterPeek && peek.AccountId != id)) UpdatePeek();
         PositionPeek();
         peek.Reveal(settings.ReducedMotion);
         PositionPeek();
@@ -30,6 +33,12 @@ public partial class MainWindow
     private void UpdatePeek()
     {
         peek.Topmost = settings.AlwaysOnTop;
+        if (waterPeek)
+        {
+            peek.UpdateWater(DisplayAccounts, DateTimeOffset.Now,
+                settings.UseDemo ? "演示额度" : settings.UseLocalAuth ? "本地Codex" : "CPA", session.Error);
+            return;
+        }
         if (trafficPeek)
         {
             peek.UpdateTraffic(traffic.Snapshot.ForDisplay(DateTimeOffset.Now), settings.UseDemo);
@@ -45,7 +54,7 @@ public partial class MainWindow
         var area = ScreenPlacement.WorkArea(this);
         peek.Width = Math.Min(304, area.Width - 16);
         peek.UpdateLayout();
-        NativePlacement.PlacePopup(this, peek, trafficPeek ? 238 : Gauge.SelectedY);
+        NativePlacement.PlacePopup(this, peek, trafficPeek ? 238 : waterPeek ? 24 : Gauge.SelectedY);
     }
 
     private void PositionVisiblePanels()
@@ -57,7 +66,7 @@ public partial class MainWindow
     private void GaugeWheel(object sender, MouseWheelEventArgs e)
     {
         if (details.IsVisible || dragging || settingsOpen) return;
-        if (trafficPeek) { e.Handled = true; return; }
+        if (trafficPeek || waterPeek) { e.Handled = true; return; }
         wheelRemainder += e.Delta;
         var steps = -wheelRemainder / 120;
         wheelRemainder %= 120;
@@ -68,6 +77,7 @@ public partial class MainWindow
     private void ScrollAccounts(int steps)
     {
         trafficPeek = false;
+        waterPeek = false;
         Gauge.Scroll(steps);
         RevealPeek();
     }

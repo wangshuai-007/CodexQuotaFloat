@@ -29,6 +29,7 @@ public partial class MainWindow
         }
         await CheckHoverAsync(checks);
         await CheckTrafficHoverAsync(checks);
+        await CheckWaterHoverAsync(checks);
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);
         await CheckSortingAndTrafficAsync(checks);

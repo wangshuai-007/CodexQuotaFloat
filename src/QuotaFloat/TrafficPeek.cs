@@ -13,6 +13,7 @@ public sealed partial class AccountPeekWindow
     public void UpdateTraffic(TrafficSnapshot snapshot, bool demo)
     {
         IsTraffic = true;
+        IsWater = false;
         AccountId = null;
         Title = "Codex 最近流量";
         body.Children.Clear();

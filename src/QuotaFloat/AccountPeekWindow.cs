@@ -36,6 +36,7 @@ public sealed partial class AccountPeekWindow : Window
     public void Update(AccountQuota? account, int index, int total, bool demo, string? error, bool loading, bool local = false)
     {
         IsTraffic = false;
+        IsWater = false;
         Title = "Codex 单账号额度";
         body.Children.Clear();
         AccountId = account?.Id;
