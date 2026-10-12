@@ -57,6 +57,8 @@ Windows 10/11 原生 WPF 额度仪表，首版默认使用假数据，不自动�
 
 ## 本地 Codex 认证
 
+窗口跟随识别兼容Codex桌面进程，以及Windows安装包`OpenAI.Codex_…/app/ChatGPT.exe`；普通`OpenAI.ChatGPT_…`应用与浏览器不参与。`--check-client <输出目录>`可验证真实窗口识别和测试浮窗附着，不读取客户端内容、不改变用户设置，也不移动或最小化Codex。输出为无凭据的`real-client-checks.txt`或失败诊断。
+
 设置 → 数据源 → **本地 Codex 认证（ChatGPT登录）**，不需要CPA地址或管理密钥。
 
 - 认证文件留空：优先调用已安装的原生`codex.exe app-server`，只执行`account/read`和`account/rateLimits/read`，复用CLI当前登录，包括文件或系统keyring认证；本工具不直接提取系统令牌、不启动推理。CLI按自己的规则维护登录缓存。

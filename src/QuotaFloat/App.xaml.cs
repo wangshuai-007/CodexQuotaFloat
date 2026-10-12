@@ -13,6 +13,25 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += HandleFatalError;
+        if (e.Args.Contains("--check-client"))
+        {
+            var index = Array.IndexOf(e.Args, "--check-client");
+            var output = index + 1 < e.Args.Length ? e.Args[index + 1] : AppContext.BaseDirectory;
+            try
+            {
+                var check = new MainWindow(new AppSettings { UseDemo = true, FollowCodex = true }, "", false);
+                MainWindow = check;
+                await check.CheckRealClientAsync(Path.GetFullPath(output));
+                Shutdown(0);
+            }
+            catch (Exception error)
+            {
+                Directory.CreateDirectory(output);
+                File.WriteAllText(Path.Combine(output, "real-client-error.txt"), error.ToString());
+                Shutdown(1);
+            }
+            return;
+        }
         if (e.Args.Contains("--render-preview"))
         {
             try

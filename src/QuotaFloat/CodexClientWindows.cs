@@ -27,7 +27,9 @@ internal static class CodexClientWindows
                 try
                 {
                     using var process = Process.GetProcessById((int)id);
-                    matched = IsClientProcess(process.ProcessName);
+                    var processName = process.ProcessName;
+                    matched = IsClientIdentity(processName, processName.Equals("ChatGPT", StringComparison.OrdinalIgnoreCase)
+                        ? process.MainModule?.FileName : null);
                 }
                 catch (Exception error) when (error is ArgumentException or InvalidOperationException)
                 { matched = false; } // 枚举期间退出的进程不作为已识别客户端。
@@ -49,6 +51,15 @@ internal static class CodexClientWindows
 
     internal static bool IsClientClass(string name) => name.Equals("Chrome_WidgetWin_1", StringComparison.Ordinal);
     internal static bool IsClientProcess(string name) => name.Equals("Codex", StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsClientIdentity(string name, string? executable)
+    {
+        if (IsClientProcess(name)) return true;
+        if (!name.Equals("ChatGPT", StringComparison.OrdinalIgnoreCase) || executable is null) return false;
+        var path = executable.Replace('\\', '/');
+        return path.EndsWith("/app/ChatGPT.exe", StringComparison.OrdinalIgnoreCase) &&
+            path.Split('/').Any(part => part.StartsWith("OpenAI.Codex_", StringComparison.OrdinalIgnoreCase));
+    }
 
     private delegate bool EnumWindowCallback(IntPtr handle, IntPtr parameter);
     [DllImport("user32.dll")]

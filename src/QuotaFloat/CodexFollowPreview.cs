@@ -24,5 +24,13 @@ internal static class CodexFollowPreview
             CodexClientWindows.IsClientClass("ConsoleWindowClass"))
             throw new InvalidOperationException("客户端识别须排除CLI控制台、浏览器和浮窗自身");
         report.Add("通过：客户端匹配排除普通浏览器、CLI控制台和浮窗自身");
+        var paths = new[] { @"C:\Program Files\WindowsApps\OpenAI.Codex_26.1007.2314.0_x64__test\app\ChatGPT.exe",
+            @"C:\Program Files\WindowsApps\OpenAI.ChatGPT_1.0_x64__test\app\ChatGPT.exe", @"C:\Other\ChatGPT.exe" };
+        for (var i = 0; i < paths.Length; i++)
+        {
+            if (CodexClientWindows.IsClientIdentity("ChatGPT", paths[i]) != (i == 0))
+                throw new InvalidOperationException("必须区分Codex安装包ChatGPT.exe与普通ChatGPT应用");
+            report.Add("通过：Codex安装包身份匹配及普通ChatGPT排除：" + i);
+        }
     }
 }
