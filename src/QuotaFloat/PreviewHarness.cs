@@ -62,6 +62,7 @@ public static class PreviewHarness
         await HoverPreview.RunAsync(output, report);
         LocalAuthPreview.Run(output, report);
         await WaterDisplayPreview.RunAsync(output, report);
+        WaterDesignPreview.Run(output, report);
         TrafficRatePreview.Run(output, report);
         TrafficPeekPreview.Run(output, report);
         KeeperPreview.Run(output, report);

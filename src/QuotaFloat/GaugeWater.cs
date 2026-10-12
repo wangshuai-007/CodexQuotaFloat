@@ -15,6 +15,8 @@ public sealed partial class QuotaGauge
     public QuotaDisplayMode DisplayMode { get; set; }
     private bool fiveUnknown = true;
     private bool weekUnknown = true;
+    private static readonly Brush WaterFiveInk = BrushOf("#206A9D");
+    private static readonly Brush WaterWeekInk = BrushOf("#116C55");
 
     private void UpdateWater(IReadOnlyList<AccountQuota> values, DateTimeOffset time, bool animate)
     {
@@ -41,15 +43,15 @@ public sealed partial class QuotaGauge
     {
         if (DisplayMode == QuotaDisplayMode.Split)
         {
-            Text(dc, "5h", 8, 10, 8, Five);
-            Text(dc, "7d", 24, 10, 8, Week);
-            Text(dc, fiveUnknown ? "—" : $"{Level:0}%", 8, 23, 7, Ink, "Bahnschrift");
-            Text(dc, weekUnknown ? "—" : $"{WeeklyLevel:0}%", 24, 23, 7, Ink, "Bahnschrift");
+            Text(dc, "5h " + (fiveUnknown ? "—" : $"{Level:0}%"), 16, 8,
+                Level >= 99.5 ? 7.8 : 9, WaterFiveInk, "Bahnschrift");
+            Text(dc, "7d " + (weekUnknown ? "—" : $"{WeeklyLevel:0}%"), 16, 22,
+                WeeklyLevel >= 99.5 ? 7.8 : 9, WaterWeekInk, "Bahnschrift");
         }
         else
         {
             var weekly = DisplayMode == QuotaDisplayMode.SevenDay;
-            Text(dc, weekly ? "7d" : "5h", 16, 6, 8, weekly ? Week : Five);
+            Text(dc, weekly ? "7d" : "5h", 16, 6, 8, weekly ? WaterWeekInk : WaterFiveInk);
             Text(dc, (weekly ? weekUnknown : fiveUnknown) ? "—" : $"{(weekly ? WeeklyLevel : Level):0}%",
                 16, 18, 11, Ink, "Bahnschrift");
         }
@@ -61,7 +63,7 @@ public sealed partial class QuotaGauge
         {
             DrawWaterPart(dc, Level, fiveUnknown, 0, 16, false);
             DrawWaterPart(dc, WeeklyLevel, weekUnknown, 16, 16, true);
-            dc.DrawLine(new Pen(BrushOf("#8AAEB2"), 0.6), new Point(16, 43), new Point(16, 278));
+            dc.DrawLine(new Pen(BrushOf("#FDFDFC"), 0.8), new Point(16, 43), new Point(16, 278));
         }
         else
         {
@@ -84,8 +86,24 @@ public sealed partial class QuotaGauge
             path.LineTo(new Point(left, 281), true, false);
         }
         dc.PushClip(new RectangleGeometry(new Rect(left, 42, width, 239)));
-        dc.DrawGeometry(new LinearGradientBrush(ColorOf(weekly ? "#CCEBDD" : "#C5E3F2"),
-            ColorOf(weekly ? "#76C5A5" : "#79B7DC"), 90) { Opacity = stale ? 0.28 : 0.72 }, null, water);
+        dc.DrawGeometry(new LinearGradientBrush(ColorOf(weekly ? "#C5E8D9" : "#C1E4F3"),
+            ColorOf(weekly ? "#6AB899" : "#78ADD1"), 90) { Opacity = stale ? 0.28 : 0.8 }, null, water);
+        DrawWaterSurface(dc, left, width, y, weekly);
+        dc.Pop();
+    }
+
+    private void DrawWaterSurface(DrawingContext dc, double left, double width, double y, bool weekly)
+    {
+        var surface = new StreamGeometry();
+        using (var path = surface.Open())
+        {
+            path.BeginFigure(new Point(left, y), false, false);
+            path.BezierTo(new Point(left + width / 3, y - 2), new Point(left + width * 2 / 3, y + 2),
+                new Point(left + width, y), true, false);
+        }
+        dc.PushOpacity(stale ? 0.3 : 0.9);
+        dc.DrawGeometry(null, new Pen(Brushes.White, 2), surface);
+        dc.DrawGeometry(null, new Pen(weekly ? WaterWeekInk : WaterFiveInk, 0.65), surface);
         dc.Pop();
     }
 }
