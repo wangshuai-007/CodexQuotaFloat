@@ -16,6 +16,7 @@ internal static class KeeperTests
     {
         ValidateUrls();
         await LoginAndPages();
+        await SupportedRangeAndRecentWindow();
         await Failures();
         await PaginationFailureAndCancellation();
         return passed;
@@ -104,6 +105,36 @@ internal static class KeeperTests
         }
         Check("Keeper错误不暴露原响应/凭据", !KeeperTrafficSource.SafeError(new HttpRequestException("fixture secret", null,
             HttpStatusCode.Unauthorized)).Contains("fixture"));
+    }
+
+    private static async Task SupportedRangeAndRecentWindow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        using var source = new KeeperTrafficSource("https://example.test", "", false,
+            new Handler(request =>
+            {
+                if (request.RequestUri!.AbsolutePath.EndsWith("session"))
+                    return Task.FromResult(Json("{\"authenticated\":true}"));
+                // 对齐Keeper官方ParseUsageRollingRange：小时范围最低5h，1h会返回400。
+                if (!request.RequestUri.Query.Contains("range=5h&"))
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest));
+                return Task.FromResult(Json(JsonSerializer.Serialize(new
+                {
+                    events = new[]
+                    {
+                        new { id = "recent", timestamp = now.AddSeconds(-10), tokens = new { total_tokens = 123L } },
+                        new { id = "old", timestamp = now.AddMinutes(-2), tokens = new { total_tokens = 999L } }
+                    },
+                    has_more = false
+                })));
+            }));
+        using var data = await source.ReadAsync(default);
+        var stats = new TrafficAccumulator();
+        stats.Ingest(data.RootElement, now);
+        Check("Keeper使用支持的5h查询且仍仅累计最近60秒", stats.Snapshot(now).Tokens == 123);
+        using var repeated = await source.ReadAsync(default);
+        stats.Ingest(repeated.RootElement, now.AddSeconds(1));
+        Check("Keeper重复快照无新增Token时速率为零", stats.Snapshot(now.AddSeconds(1)).TokensPerSecond == 0);
     }
 
     private static HttpResponseMessage Page(DateTimeOffset time, string id, long tokens, bool more, string? cursor = null) =>

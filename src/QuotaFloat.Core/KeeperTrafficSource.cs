@@ -35,7 +35,8 @@ public sealed class KeeperTrafficSource : IDisposable
         long responseBytes = 0;
         for (var page = 0; page < 200; page++)
         {
-            using var request = Request(HttpMethod.Get, "usage/events?range=1h&page_size=100&cursor_mode=true" +
+            // Keeper小时滚动范围最低5h；在KeeperRecords中再限制到最近60秒。
+            using var request = Request(HttpMethod.Get, "usage/events?range=5h&page_size=100&cursor_mode=true" +
                 (cursor.Length == 0 ? "" : "&cursor=" + Uri.EscapeDataString(cursor)));
             using var response = await SendAsync(request, budget.Token);
             var payload = await response.Content.ReadAsByteArrayAsync(budget.Token);
