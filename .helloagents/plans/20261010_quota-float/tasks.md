@@ -1,5 +1,8 @@
 # Codex 额度浮窗 — 任务分解
 
+## 公开发布整理
+- [√] 任务23（AFK）：重写公开README、4张匿名WPF截图、配置/发布文档，清理机器路径与实际局域网示例；新增自包含.NET10与轻量win-x64 ZIP、SHA256及发布说明，包含运行时许可。GitHub工作流固定官方Actions提交、最小权限及标签Release草稿流程；逻辑247、WPF74、原生96、包解压启动及哈希、actionlint和公开文件检查通过。未推送或创建远端Release，未在无.NET干净Windows上人工测试。
+
 ## 拆分原则
 端到端交付可验证行为；AFK 可独立执行，HITL 只用于必要外部输入。
 
@@ -27,7 +30,7 @@
 - [√] 任务14（AFK）：修复Keeper不支持range=1h导致HTTP400；官方范围定义已核实，新增回归先复现400再通过；238项逻辑、43项WPF、54项原生检查通过；Release构建0警告0错误，7个release文件SHA256一致，zip更新。真实认证后用量仍待用户本地验证。
 
 ## Codex /goal 执行入口
-按 C:/Codes/CodexQuotaFloat/.helloagents/plans/20261010_quota-float/tasks.md 执行，遵守 requirements.md、plan.md、contract.json；/goal -> ~auto -> ~qa。真实 CPA 凭据仅在用户主动切换数据源时输入，当前演示交付不依赖该输入。
+按 .helloagents/plans/20261010_quota-float/tasks.md 执行，遵守 requirements.md、plan.md、contract.json；/goal -> ~auto -> ~qa。真实 CPA 凭据仅在用户主动切换数据源时输入，当前演示交付不依赖该输入。
 
 ## 进度
 交互修订已实现。图标、60秒只读Token/请求流量、5秒最小同步与本地排序已完成。192项Core/CPA/本地认证/CLI协议/流量/排序/视口/密钥逻辑检查、39项WPF布局/几何检查、54项真实Windows窗口事件检查通过；本地默认CLI不是ChatGPT登录，成功获取真实额度仍待有效认证，包括主屏150%与副屏100%的16项双屏回归。主浮窗48×296，单账号小卡304宽，滚轮可访问第11个及后续账号，点击才展示全部。真实CPA未联调，物理鼠标拖动未人工验收；混合DPI已用实际双屏exe验证窗口事件路径。

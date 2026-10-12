@@ -1,0 +1,85 @@
+name: Windows Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '产物版本（不带v），手动运行只生成构建产物'
+        required: true
+        default: '0.1.0'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: 验证逻辑
+        run: dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
+      - name: 检查公开文件与文档链接
+        run: '& "scripts/check-public-files.ps1"'
+      - name: 构建及离线界面检查
+        run: |
+          dotnet build "src/QuotaFloat/QuotaFloat.csproj" -c Release
+          if ($LASTEXITCODE -ne 0) { throw '构建失败' }
+          $output = Join-Path $PWD 'artifacts/ci-preview'
+          Start-Process -FilePath "release/CodexQuotaFloat.exe" -ArgumentList "--render-preview `"$output`"" -WindowStyle Hidden -Wait
+          if (-not (Test-Path -LiteralPath "$output/ui-checks.txt") -or (Test-Path -LiteralPath "$output/preview-error.txt")) { throw '界面检查失败' }
+      - name: 生成自包含与轻量发布包
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION }
+          & "scripts/publish-release.ps1" -Version $version
+          & "scripts/verify-release-assets.ps1" -Version $version
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Windows-Release
+          path: artifacts/github-release/*/*
+          if-no-files-found: error
+          retention-days: 30
+  draft-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Windows-Release
+          path: assets
+      - name: 创建或更新Release草稿
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $assets = Get-ChildItem -LiteralPath 'assets' -File -Recurse
+          $notes = @($assets | Where-Object Name -eq 'release-notes.md')
+          if ($notes.Count -ne 1) { throw '发布说明缺失或重复' }
+          gh release view "$env:GITHUB_REF_NAME" --json isDraft --jq '.isDraft' > "draft-status.txt"
+          if ($LASTEXITCODE -eq 0) {
+            if ((Get-Content -LiteralPath 'draft-status.txt' -Raw).Trim() -ne 'true') { throw '已有正式Release，不自动覆盖' }
+            gh release edit "$env:GITHUB_REF_NAME" --notes-file "$($notes[0].FullName)"
+            if ($LASTEXITCODE -ne 0) { throw '更新草稿失败' }
+          } else {
+            gh release create "$env:GITHUB_REF_NAME" --verify-tag --draft --title "CodexQuotaFloat $env:GITHUB_REF_NAME" --notes-file "$($notes[0].FullName)"
+            if ($LASTEXITCODE -ne 0) { throw '创建Release草稿失败' }
+          }
+          $paths = @($assets | ForEach-Object FullName)
+          gh release upload "$env:GITHUB_REF_NAME" @paths --clobber
+          if ($LASTEXITCODE -ne 0) { throw '上传Release产物失败' }

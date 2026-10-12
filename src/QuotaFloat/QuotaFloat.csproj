@@ -15,7 +15,7 @@
     <ProjectReference Include="../QuotaFloat.Core/QuotaFloat.Core.csproj" />
     <Resource Include="Assets/App.ico" />
   </ItemGroup>
-  <Target Name="CopyLocalTestRelease" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+  <Target Name="CopyLocalTestRelease" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipLocalTestReleaseCopy)' != 'true'">
     <PropertyGroup>
       <LocalTestReleaseDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../release/'))</LocalTestReleaseDir>
     </PropertyGroup>

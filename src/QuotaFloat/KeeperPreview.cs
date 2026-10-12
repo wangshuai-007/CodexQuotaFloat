@@ -12,7 +12,7 @@ internal static class KeeperPreview
     internal static void Run(string output, List<string> report)
     {
         var options = new AppSettings { UseDemo = false, UseKeeper = true,
-            KeeperUrl = "http://192.168.50.226:8123/", KeeperPassword = "fixture-only", AllowKeeperLanHttp = true };
+            KeeperUrl = "http://192.168.1.100:8123/", KeeperPassword = "fixture-only", AllowKeeperLanHttp = true };
         var window = new SettingsWindow(options, "fixture-cpa-key");
         if (window.KeeperSection.Visibility != Visibility.Visible || window.SnapshotSection.Visibility != Visibility.Collapsed ||
             window.KeeperUrlOption.Text != options.KeeperUrl || window.KeeperPasswordOption.Password != "fixture-only")

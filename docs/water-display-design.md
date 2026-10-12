@@ -1,7 +1,7 @@
 # 水位展示设计
 
 ## 范围与技能
-来源：https://github.com/Owl-Listener/designer-skills 。应用 data-visualization、color-system、critique-visual-hierarchy，已安装到 C:/Users/shiney/.codex/skills/；未安装整套库或Claude插件。
+来源：https://github.com/Owl-Listener/designer-skills 。应用 data-visualization、color-system、critique-visual-hierarchy，使用用户技能目录；未安装整套库或Claude插件。
 演进现有Windows边缘浮窗，保留主窗48×296、水柱32×280、透明液体与波浪；不再采用用户否定的短实心槽。
 
 ## 数据与视觉

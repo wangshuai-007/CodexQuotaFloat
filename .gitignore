@@ -11,3 +11,8 @@ artifacts/
 settings.json
 *.secret
 .helloagents/sessions/
+*.zip
+*.sha256
+.env
+.env.*
+auth.json

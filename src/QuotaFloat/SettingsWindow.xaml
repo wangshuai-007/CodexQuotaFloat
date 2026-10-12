@@ -48,7 +48,7 @@
   <CheckBox x:Name="KeeperOption" Content="使用 CPA Usage Keeper 查询Token统计" Margin="0,16,0,0" Checked="KeeperChanged" Unchecked="KeeperChanged"/>
   <StackPanel x:Name="KeeperSection" Visibility="Collapsed">
    <TextBlock Text="Keeper应用根地址（不是CPA管理地址）" Margin="0,12,0,6" FontSize="14"/>
-   <TextBox x:Name="KeeperUrlOption" ToolTip="例如 http://192.168.50.226:8123/；也支持HTTPS及部署子路径"/>
+   <TextBox x:Name="KeeperUrlOption" ToolTip="例如 https://stats.example.com/；也支持HTTPS及部署子路径"/>
    <TextBlock Text="Keeper登录密码（仅本次会话）" Margin="0,12,0,6" FontSize="14"/>
    <PasswordBox x:Name="KeeperPasswordOption"/>
    <CheckBox x:Name="KeeperHttpOption" Content="允许局域网HTTP（密码与会话明文传输）" Margin="0,10,0,0"/>

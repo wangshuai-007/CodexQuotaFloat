@@ -24,13 +24,13 @@ internal static class KeeperTests
 
     private static void ValidateUrls()
     {
-        foreach (var address in new[] { "http://192.168.50.226:8123", "http://public.example", "file:///tmp",
+        foreach (var address in new[] { "http://192.168.1.100:8123", "http://public.example", "file:///tmp",
             "https://u:p@example.test", "https://example.test?password=x", "https://example.test/#x", "https://example.test/api/v1" })
         {
             try { KeeperUrl.Validate(address, false); Check("Keeper拒绝不安全根地址", false); }
             catch (ArgumentException) { Check("Keeper拒绝不安全根地址", true); }
         }
-        Check("Keeper局域网HTTP须显式允许", KeeperUrl.Validate("http://192.168.50.226:8123", true).Port == 8123);
+        Check("Keeper局域网HTTP须显式允许", KeeperUrl.Validate("http://192.168.1.100:8123", true).Port == 8123);
         Check("Keeper公网HTTP即使勾选也拒绝", Reject("http://8.8.8.8", true));
         Check("KeeperHTTPS保留部署子路径", KeeperUrl.Validate("https://example.test/keeper", false).AbsolutePath == "/keeper/");
         Check("Keeper根地址不是管理路径", KeeperUrl.Validate("http://127.0.0.1:8123", false).AbsolutePath == "/");
