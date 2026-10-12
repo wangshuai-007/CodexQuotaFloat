@@ -70,6 +70,10 @@ Windows 10/11 原生 WPF 额度仪表，首版默认使用假数据，不自动�
 
 ## 只读实时流量
 
+### 本地构建与自动重启
+
+本地构建使用 `scripts/build-local.ps1`：检测到本项目测试程序运行时，先结束它释放文件，构建并校验release复制成功后重新启动；不结束CPA、Keeper或其他目录的同名程序。构建失败不启动不完整版本。Keeper密码不落盘，重启后需重新输入或使用 `KEEPER_LOGIN_PASSWORD`。
+
 ### CPA Usage Keeper
 
 设置中勾选“使用 CPA Usage Keeper 查询Token统计”，填写**Keeper应用根地址**（不是CPA管理地址，也不是插件菜单地址）和Keeper自己的登录密码。支持部署子路径，例如`https://stats.example.com/keeper/`。不要将根地址填入旧的“只读流量快照地址”。
