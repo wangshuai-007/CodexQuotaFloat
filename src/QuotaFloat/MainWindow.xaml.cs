@@ -167,6 +167,7 @@ public partial class MainWindow : Window
         var snapshot = traffic.Snapshot.ForDisplay(DateTimeOffset.Now);
         Gauge.SetTraffic(snapshot);
         details.SetTraffic(snapshot, settings.UseDemo);
+        if (peek.IsVisible && trafficPeek) peek.UpdateTraffic(snapshot, settings.UseDemo);
     }
 
     private void RestorePosition()

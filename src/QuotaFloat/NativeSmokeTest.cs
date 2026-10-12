@@ -28,6 +28,7 @@ public partial class MainWindow
                 $"设置立即应用独立5h/7天水位：{mode}", checks);
         }
         await CheckHoverAsync(checks);
+        await CheckTrafficHoverAsync(checks);
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);
         await CheckSortingAndTrafficAsync(checks);

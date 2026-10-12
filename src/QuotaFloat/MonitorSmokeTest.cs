@@ -26,6 +26,10 @@ public partial class MainWindow
                 await Task.Delay(180);
                 Check(peek.IsVisible && !details.IsVisible && OnSameMonitor(peek),
                     label + " 悬停小卡在同屏工作区内", checks);
+                ShowPeekAt(230);
+                await Task.Delay(100);
+                Check(peek.IsVisible && peek.IsTraffic && OnSameMonitor(peek),
+                    label + " 流量悬停小卡在同屏工作区内", checks);
                 ClickGauge();
                 await Task.Delay(180);
                 Check(details.IsVisible && !peek.IsVisible && OnSameMonitor(details),

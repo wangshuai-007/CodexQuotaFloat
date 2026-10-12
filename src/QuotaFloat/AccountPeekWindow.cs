@@ -6,8 +6,8 @@ using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
-/// <summary>悬停只显示一个账号，详情卡跟随当前账号行，而不是展开整个列表。</summary>
-public sealed class AccountPeekWindow : Window
+/// <summary>复用小卡展示当前账号额度或最近流量，悬停不展开全部列表。</summary>
+public sealed partial class AccountPeekWindow : Window
 {
     private readonly StackPanel body = new();
     public string? AccountId { get; private set; }
@@ -35,6 +35,8 @@ public sealed class AccountPeekWindow : Window
     /// <summary>替换当前账号详情；显示剩余、时间进度、重置时刻与数据来源。</summary>
     public void Update(AccountQuota? account, int index, int total, bool demo, string? error, bool loading, bool local = false)
     {
+        IsTraffic = false;
+        Title = "Codex 单账号额度";
         body.Children.Clear();
         AccountId = account?.Id;
         body.Children.Add(new TextBlock { Text = account?.Name ?? "暂无账号", FontSize = 14,

@@ -63,6 +63,7 @@ public static class PreviewHarness
         LocalAuthPreview.Run(output, report);
         await WaterDisplayPreview.RunAsync(output, report);
         TrafficRatePreview.Run(output, report);
+        TrafficPeekPreview.Run(output, report);
         KeeperPreview.Run(output, report);
         CheckGeometry(report);
         File.WriteAllLines(Path.Combine(output, "ui-checks.txt"), report.Append(

@@ -76,6 +76,8 @@ Windows 10/11 原生 WPF 额度仪表，首版默认使用假数据，不自动�
 
 ### CPA Usage Keeper
 
+鼠标移到浮窗底部Token/s或趋势区域，会显示最近60秒Token总量与12格趋势（每格5秒），同时标明来源、截至时间及查询错误；移回账号区恢复额度小卡。仅复用已有每秒快照，不额外请求或显示请求次数。
+
 设置中勾选“使用 CPA Usage Keeper 查询Token统计”，填写**Keeper应用根地址**（不是CPA管理地址，也不是插件菜单地址）和Keeper自己的登录密码。支持部署子路径，例如`https://stats.example.com/keeper/`。不要将根地址填入旧的“只读流量快照地址”。
 
 - Keeper与额度来源独立，可搭配CPA额度或本地Codex额度；演示模式不访问Keeper。
