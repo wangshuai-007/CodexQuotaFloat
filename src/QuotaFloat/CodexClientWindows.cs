@@ -8,48 +8,47 @@ namespace QuotaFloat;
 /// <summary>只读枚举Codex桌面主窗口，不把CLI、普通浏览器标签或工具窗当作客户端。</summary>
 internal static class CodexClientWindows
 {
-    internal static bool? HasVisibleClient()
+    internal static IntPtr? FindClient()
     {
         var processes = new Dictionary<uint, bool>();
         var lookupFailed = false;
-        var result = ReadVisible(handle =>
+        var found = IntPtr.Zero;
+        var foreground = GetForegroundWindow();
+        var success = EnumWindows((handle, _) =>
         {
+            if (GetWindow(handle, 4) != IntPtr.Zero || GetWindowTextLength(handle) == 0) return true;
             var name = new StringBuilder(256);
             GetClassName(handle, name, name.Capacity);
-            if (!IsClientClass(name.ToString())) return false;
+            if (!IsClientClass(name.ToString())) return true;
             GetWindowThreadProcessId(handle, out var id);
-            if (processes.TryGetValue(id, out var matched)) return matched;
-            try
+            var matched = processes.GetValueOrDefault(id);
+            if (!processes.ContainsKey(id))
             {
-                using var process = Process.GetProcessById((int)id);
-                matched = IsClientProcess(process.ProcessName);
+                try
+                {
+                    using var process = Process.GetProcessById((int)id);
+                    matched = IsClientProcess(process.ProcessName);
+                }
+                catch (Exception error) when (error is ArgumentException or InvalidOperationException)
+                { matched = false; } // 枚举期间退出的进程不作为已识别客户端。
+                catch (Win32Exception) { lookupFailed = true; matched = false; }
+                processes[id] = matched;
             }
-            catch (Exception error) when (error is ArgumentException or InvalidOperationException)
-            { matched = false; } // 枚举期间退出的进程不作为已识别客户端。
-            catch (Win32Exception) { lookupFailed = true; matched = false; }
-            processes[id] = matched;
-            return matched;
-        });
-        return result == false && lookupFailed ? null : result;
+            if (matched && (found == IntPtr.Zero || found != foreground &&
+                (handle == foreground || IsAvailable(found) != true && IsAvailable(handle) == true))) found = handle;
+            return true;
+        }, IntPtr.Zero);
+        return !success || lookupFailed && found == IntPtr.Zero ? null : found;
+    }
+
+    internal static bool? IsAvailable(IntPtr handle)
+    {
+        if (!IsWindowVisible(handle) || IsIconic(handle)) return false;
+        return DwmGetWindowAttribute(handle, 14, out var cloaked, sizeof(int)) == 0 ? cloaked == 0 : null;
     }
 
     internal static bool IsClientClass(string name) => name.Equals("Chrome_WidgetWin_1", StringComparison.Ordinal);
     internal static bool IsClientProcess(string name) => name.Equals("Codex", StringComparison.OrdinalIgnoreCase);
-
-    internal static bool? ReadVisible(Func<IntPtr, bool> isClient)
-    {
-        var visible = false;
-        var failed = false;
-        var success = EnumWindows((handle, _) =>
-        {
-            if (GetWindow(handle, 4) != IntPtr.Zero || GetWindowTextLength(handle) == 0 || !isClient(handle)) return true;
-            if (!IsWindowVisible(handle) || IsIconic(handle)) return true;
-            if (DwmGetWindowAttribute(handle, 14, out var cloaked, sizeof(int)) != 0) failed = true;
-            else if (cloaked == 0) visible = true;
-            return true;
-        }, IntPtr.Zero);
-        return visible ? true : !success || failed ? null : false;
-    }
 
     private delegate bool EnumWindowCallback(IntPtr handle, IntPtr parameter);
     [DllImport("user32.dll")]
@@ -63,6 +62,8 @@ internal static class CodexClientWindows
     private static extern int GetWindowTextLength(IntPtr handle);
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindow(IntPtr handle, uint command);
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsWindowVisible(IntPtr handle);

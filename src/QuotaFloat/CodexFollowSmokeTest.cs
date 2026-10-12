@@ -16,10 +16,12 @@ public partial class MainWindow
             client.Show();
             var handle = new WindowInteropHelper(client).Handle;
             var secondHandle = new WindowInteropHelper(second).EnsureHandle();
-            clientVisibilityReader = () => CodexClientWindows.ReadVisible(h => h == handle || h == secondHandle);
+            clientHandleReader = () => CodexClientWindows.IsAvailable(secondHandle) == true ? secondHandle : handle;
             settings.FollowCodex = true;
             ConfigureClientFollow();
             Check(IsVisible && clientTimer.IsEnabled, "跟随开关启动500ms窗口状态检查，可见客户端保持浮窗", checks);
+            Check(!IsNativeTopmost(this) && !IsNativeTopmost(details), "附着时取消全局置顶，但保留置顶偏好", checks);
+            await CheckAttachmentLayersAsync(client, handle, checks);
             pinned = true; Expand();
             client.WindowState = WindowState.Minimized;
             await Task.Delay(650);
@@ -41,16 +43,48 @@ public partial class MainWindow
             Check(IsVisible && !clientTimer.IsEnabled, "关闭跟随立即显示并停止窗口轮询", checks);
             settings.FollowCodex = true; ConfigureClientFollow();
             ShowFromTray();
-            Check(IsVisible && !settings.FollowCodex && !clientTimer.IsEnabled,
-                "托盘显示浮窗关闭跟随，防止恢复后立即消失", checks);
+            Check(IsVisible && settings.FollowCodex && clientTimer.IsEnabled,
+                "托盘显示和双击不清除跟随开关", checks);
+            var reopened = new SettingsWindow(settings, "fixture-key");
+            Check(reopened.FollowCodexOption.IsChecked == true, "托盘显示后重新打开设置仍勾选跟随", checks);
+            reopened.Close();
             settings.FollowCodex = true; client.Close(); second.Close(); ConfigureClientFollow();
-            Check(!IsVisible, "客户端窗口关闭后隐藏，保留应用进程", checks);
+            clientHandleReader = () => IntPtr.Zero; ConfigureClientFollow();
+            Check(IsVisible && settings.FollowCodex && IsNativeTopmost(this), "找不到客户端自动独立显示，保留跟随开关及置顶偏好", checks);
         }
         finally
         {
             settings.FollowCodex = false; ConfigureClientFollow();
-            clientVisibilityReader = CodexClientWindows.HasVisibleClient;
+            clientHandleReader = CodexClientWindows.FindClient;
             client.Close(); second.Close();
         }
+    }
+
+    private async Task CheckAttachmentLayersAsync(Window client, IntPtr handle, List<string> checks)
+    {
+        var initial = NativePlacement.Bounds(this);
+        var origin = NativePlacement.Bounds(client);
+        NativePlacement.Move(client, new Point(origin.Left + 60, origin.Top + 35));
+        await Task.Delay(650);
+        var moved = NativePlacement.Bounds(this);
+        Check(Math.Abs(moved.Left - initial.Left - 60) < 2 && Math.Abs(moved.Top - initial.Top - 35) < 2,
+            "附着浮窗随客户端移动，使用物理坐标避免混合DPI偏移", checks);
+        var cover = new Window { Title = "覆盖客户端测试", WindowStyle = WindowStyle.None,
+            Width = 600, Height = 400, Left = client.Left - 30, Top = client.Top - 30,
+            Background = System.Windows.Media.Brushes.White, ShowInTaskbar = true };
+        try
+        {
+            cover.Show(); cover.Activate();
+            var covering = new WindowInteropHelper(cover).Handle;
+            coverageReader = h => ClientAttachment.CoveredBy(h, covering, OwnHandles);
+            await Task.Delay(650);
+            Check(ClientAttachment.CoveredBy(handle, covering, OwnHandles) && !IsVisible,
+                "注入前台句柄并用真实窗口几何验证完整覆盖时隐藏", checks);
+            cover.Hide(); client.Activate();
+            coverageReader = h => ClientAttachment.CoveredBy(h, handle, OwnHandles);
+            await Task.Delay(650);
+            Check(IsVisible && !IsNativeTopmost(this), "返回客户端自动恢复附着，不成为全局置顶", checks);
+        }
+        finally { coverageReader = null; cover.Close(); }
     }
 }

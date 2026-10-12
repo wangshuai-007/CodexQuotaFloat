@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Interop;
+using System.ComponentModel;
 
 namespace QuotaFloat;
 
@@ -9,7 +11,11 @@ public partial class MainWindow
     private readonly DispatcherTimer clientTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private bool hiddenByClient;
     private bool restorePinnedDetails;
-    private Func<bool?> clientVisibilityReader = CodexClientWindows.HasVisibleClient;
+    private Func<IntPtr?> clientHandleReader = CodexClientWindows.FindClient;
+    private IntPtr attachedClient;
+    private Func<IntPtr, bool>? coverageReader;
+    private bool EffectiveTopmost => attachedClient == IntPtr.Zero && settings.AlwaysOnTop;
+    private IEnumerable<IntPtr> OwnHandles => new Window[] { this, details, peek }.Select(w => new WindowInteropHelper(w).Handle);
     private readonly MenuItem followMenu = new() { Header = "跟随 Codex 显示/隐藏", IsCheckable = true };
 
     private void WireClientFollow()
@@ -22,7 +28,7 @@ public partial class MainWindow
         };
         menu.Items.Insert(3, followMenu);
         menu.Opened += (_, _) => followMenu.IsChecked = settings.FollowCodex;
-        clientTimer.Tick += (_, _) => ApplyClientVisibility(clientVisibilityReader());
+        clientTimer.Tick += (_, _) => FollowClient();
         Loaded += (_, _) => ConfigureClientFollow();
         Closed += (_, _) => clientTimer.Stop();
     }
@@ -32,7 +38,48 @@ public partial class MainWindow
         followMenu.IsChecked = settings.FollowCodex;
         if (settings.FollowCodex) clientTimer.Start();
         else clientTimer.Stop();
-        ApplyClientVisibility(settings.FollowCodex ? clientVisibilityReader() : true);
+        FollowClient();
+    }
+
+    private void FollowClient()
+    {
+        if (settingsOpen || dragging) return;
+        var target = settings.FollowCodex ? clientHandleReader() : IntPtr.Zero;
+        var next = target ?? IntPtr.Zero;
+        if (next != attachedClient)
+        {
+            attachedClient = next;
+            Topmost = EffectiveTopmost;
+            details.Topmost = EffectiveTopmost;
+            peek.Topmost = EffectiveTopmost;
+            if (next == IntPtr.Zero) RestorePosition();
+        }
+        if (next == IntPtr.Zero)
+        {
+            ApplyClientVisibility(true);
+            if (target is null) tray.Text = "Codex 额度浮窗 · 无法附着，已独立显示";
+            else if (settings.FollowCodex) tray.Text = "Codex 额度浮窗 · 未找到客户端，独立显示";
+            return;
+        }
+        var available = CodexClientWindows.IsAvailable(next);
+        var covered = coverageReader?.Invoke(next) ?? ClientAttachment.Covered(next, OwnHandles);
+        ApplyClientVisibility(available is null ? true : available == true && !covered);
+        if (IsVisible && available == true)
+        {
+            try { if (!ClientAttachment.Place(this, next, OwnHandles)) AttachmentFailed(); }
+            catch (Win32Exception) { AttachmentFailed(); }
+        }
+    }
+
+    private void AttachmentFailed()
+    {
+        attachedClient = IntPtr.Zero;
+        Topmost = EffectiveTopmost;
+        details.Topmost = EffectiveTopmost;
+        peek.Topmost = EffectiveTopmost;
+        RestorePosition();
+        ApplyClientVisibility(true);
+        tray.Text = "Codex 额度浮窗 · 附着失败，已独立显示";
     }
 
     private void ApplyClientVisibility(bool? clientVisible)
@@ -69,9 +116,8 @@ public partial class MainWindow
 
     private void ShowFromTray(bool showDetails = false)
     {
-        settings.FollowCodex = false;
-        ConfigureClientFollow();
         RestorePosition();
+        hiddenByClient = false;
         Show();
         Activate();
         SavePosition();

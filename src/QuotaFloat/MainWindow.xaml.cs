@@ -136,7 +136,7 @@ public partial class MainWindow : Window
         tray.Visible = true;
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(() => ShowFromTray(true));
         var trayMenu = new System.Windows.Forms.ContextMenuStrip();
-        trayMenu.Items.Add("显示浮窗（关闭跟随）", null, (_, _) => Dispatcher.Invoke(() => ShowFromTray()));
+        trayMenu.Items.Add("显示浮窗", null, (_, _) => Dispatcher.Invoke(() => ShowFromTray()));
         trayMenu.Items.Add("设置", null, (_, _) => Dispatcher.Invoke(OpenSettings));
         trayMenu.Items.Add("退出", null, (_, _) => Dispatcher.Invoke(Close));
         tray.ContextMenuStrip = trayMenu;
@@ -150,6 +150,7 @@ public partial class MainWindow : Window
         Gauge.Update(DisplayAccounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
         details.Update(DisplayAccounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
             session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo, settings.QuotaDisplay);
+        details.Topmost = EffectiveTopmost;
         tray.Text = $"Codex 额度浮窗 · {label}";
         if (peek.IsVisible) UpdatePeek();
         PositionVisiblePanels();
@@ -211,9 +212,9 @@ public partial class MainWindow : Window
     private void SetTopmost(bool value)
     {
         settings.AlwaysOnTop = value;
-        Topmost = value;
-        details.Topmost = value;
-        peek.Topmost = value;
+        Topmost = EffectiveTopmost;
+        details.Topmost = EffectiveTopmost;
+        peek.Topmost = EffectiveTopmost;
         SavePosition();
         UpdateViews();
     }
@@ -232,7 +233,7 @@ public partial class MainWindow : Window
             if (dialog.ShowDialog() != true) return;
             settings = dialog.Result;
             managementKey = dialog.ManagementKey;
-            Topmost = settings.AlwaysOnTop;
+            Topmost = EffectiveTopmost;
             refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
             session.Configure(settings, managementKey);
             traffic.Configure(settings, managementKey);
@@ -245,8 +246,7 @@ public partial class MainWindow : Window
     private void SavePosition()
     {
         if (!persistSettings) return;
-        settings.Left = Left;
-        settings.Top = Top;
+        if (attachedClient == IntPtr.Zero) { settings.Left = Left; settings.Top = Top; }
         try { SettingsStore.Save(settings); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { MessageBox.Show(this, "无法保存浮窗位置，请检查本地设置目录权限。", "Codex 额度浮窗", MessageBoxButton.OK, MessageBoxImage.Warning); }
