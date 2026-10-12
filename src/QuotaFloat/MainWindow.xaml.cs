@@ -44,6 +44,7 @@ public partial class MainWindow : Window
         WireDetails();
         Gauge.InvokeRequested += () => { pinned = true; Expand(true); };
         WireMenu();
+        WireClientFollow();
         WireTimers();
         if (persist) WireTray();
         session.Changed += UpdateViews;
@@ -133,9 +134,9 @@ public partial class MainWindow : Window
         tray.Icon = trayIcon;
         tray.Text = "Codex 额度浮窗";
         tray.Visible = true;
-        tray.DoubleClick += (_, _) => Dispatcher.Invoke(() => { RestorePosition(); Show(); Activate(); pinned = true; Expand(true); });
+        tray.DoubleClick += (_, _) => Dispatcher.Invoke(() => ShowFromTray(true));
         var trayMenu = new System.Windows.Forms.ContextMenuStrip();
-        trayMenu.Items.Add("显示浮窗", null, (_, _) => Dispatcher.Invoke(() => { RestorePosition(); Show(); Activate(); }));
+        trayMenu.Items.Add("显示浮窗（关闭跟随）", null, (_, _) => Dispatcher.Invoke(() => ShowFromTray()));
         trayMenu.Items.Add("设置", null, (_, _) => Dispatcher.Invoke(OpenSettings));
         trayMenu.Items.Add("退出", null, (_, _) => Dispatcher.Invoke(Close));
         tray.ContextMenuStrip = trayMenu;
@@ -187,7 +188,7 @@ public partial class MainWindow : Window
 
     private void Expand(bool focus = false)
     {
-        if (dragging || settingsOpen) return;
+        if (dragging || settingsOpen || hiddenByClient) return;
         hoverTimer.Stop();
         peek.Hide();
         UpdateViews();
@@ -238,7 +239,7 @@ public partial class MainWindow : Window
             UpdateViews();
             _ = RefreshAll();
         }
-        finally { settingsOpen = false; if (pinned) Expand(); }
+        finally { settingsOpen = false; ConfigureClientFollow(); if (pinned && !hiddenByClient) Expand(); }
     }
 
     private void SavePosition()

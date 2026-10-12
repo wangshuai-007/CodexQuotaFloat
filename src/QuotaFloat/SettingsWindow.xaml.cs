@@ -20,6 +20,7 @@ public partial class SettingsWindow : Window
         TopmostOption.IsChecked = current.AlwaysOnTop;
         DockOption.IsChecked = current.DockToEdge;
         MotionOption.IsChecked = current.ReducedMotion;
+        FollowCodexOption.IsChecked = current.FollowCodex;
         QuotaDisplayOption.SelectedIndex = Enum.IsDefined(current.QuotaDisplay) ? (int)current.QuotaDisplay : 0;
         DemoCountOption.Text = current.DemoCount.ToString();
         UrlOption.Text = current.ManagementUrl;
@@ -98,6 +99,7 @@ public partial class SettingsWindow : Window
         {
             UseDemo = demo, UseLocalAuth = local, LocalAuthPath = LocalAuthOption.Text.Trim(),
             AlwaysOnTop = TopmostOption.IsChecked == true,
+            FollowCodex = FollowCodexOption.IsChecked == true,
             DockToEdge = DockOption.IsChecked == true, ReducedMotion = MotionOption.IsChecked == true,
             QuotaDisplay = (QuotaDisplayMode)Math.Clamp(QuotaDisplayOption.SelectedIndex, 0, 2),
             DemoCount = count, RefreshSeconds = interval, ManagementUrl = UrlOption.Text.Trim().TrimEnd('/'),

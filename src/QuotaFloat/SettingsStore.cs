@@ -12,6 +12,8 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; } = true;
     public bool DockToEdge { get; set; } = true;
     public bool ReducedMotion { get; set; }
+    /// <summary>跟随Codex桌面主窗口显示/隐藏；默认关闭，CLI不参与联动。</summary>
+    public bool FollowCodex { get; set; }
     /// <summary>水位显示：0=5小时额度；1=7天额度；2=左5小时、右7天。</summary>
     public QuotaDisplayMode QuotaDisplay { get; set; } = QuotaDisplayMode.FiveHour;
     public int DemoCount { get; set; } = 3;

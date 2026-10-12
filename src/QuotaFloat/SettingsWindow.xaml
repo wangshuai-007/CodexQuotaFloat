@@ -7,6 +7,8 @@
   <CheckBox x:Name="TopmostOption" Content="始终置顶"/>
   <CheckBox x:Name="DockOption" Content="拖动到屏幕边缘时自动停靠"/>
   <CheckBox x:Name="MotionOption" Content="减弱动效"/>
+  <CheckBox x:Name="FollowCodexOption" Content="跟随 Codex 客户端显示/隐藏"/>
+  <TextBlock Text="客户端最小化、隐藏或退出时隐藏浮窗；恢复后显示，不随切换程序隐藏。仅支持桌面客户端，不跟随CLI或浏览器；托盘“显示浮窗”会关闭跟随。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
   <TextBlock Text="浮窗总额度水位" Margin="0,16,0,8" FontWeight="SemiBold"/>
   <ComboBox x:Name="QuotaDisplayOption" Height="38" AutomationProperties.Name="浮窗总额度水位">
    <ComboBoxItem Content="5h 剩余额度"/>

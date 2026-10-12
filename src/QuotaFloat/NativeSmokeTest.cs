@@ -35,6 +35,7 @@ public partial class MainWindow
         await CheckSortingAndTrafficAsync(checks);
         await CheckTrafficCadenceAsync(checks);
         await CheckMonitorsAsync(checks);
+        await CheckCodexFollowAsync(checks);
         Directory.CreateDirectory(output);
         File.WriteAllLines(Path.Combine(output, "native-checks.txt"), checks.Append(
             "限制：真实窗口与实际显示器事件路径验证，包括跨屏定位；未进行系统物理鼠标操作或人工验收。"), new UTF8Encoding(false));
