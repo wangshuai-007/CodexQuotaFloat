@@ -20,6 +20,10 @@
 
 无CLI时尝试 `CODEX_HOME/auth.json` 或 `%USERPROFILE%/.codex/auth.json`。手动路径只读文件，不复制、刷新或改写令牌。API Key模式没有订阅限额，必须是ChatGPT账号登录。换号后刷新；认证过期应在Codex更新登录。本地只显示一个账号，流量需另接Keeper。
 
+- 桌面客户端能显示额度，不代表默认CLI或所选文件使用同一份ChatGPT登录。提示API Key时，应选择实际的ChatGPT `auth.json`，不要把API Key转换或伪装成OAuth令牌；不要覆盖正在使用的CPA认证。
+- 文件模式兼容UTF8（有/无BOM）及带BOM的UTF16。认证文件解析失败、额度接口返回网页/无效JSON、CLI协议失败分别提示；不会输出文件、令牌或响应正文。
+- 官方支持文件、系统凭据库及仅进程内认证。凭据库或进程内认证不一定有可用的 `auth.json`；本工具不会读取桌面客户端进程内存或导出系统凭据。路径留空的CLI模式仍须使用有效ChatGPT登录。
+
 依据：[Codex认证](https://developers.openai.com/codex/auth/)、[App Server](https://developers.openai.com/codex/app-server/)。
 
 ## Keeper

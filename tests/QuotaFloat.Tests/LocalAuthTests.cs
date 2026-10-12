@@ -15,6 +15,7 @@ internal static class LocalAuthTests
             Console.WriteLine("通过：" + title); count++;
         }
         CheckPathsAndParsing(Check);
+        await LocalAuthEncodingTests.RunAsync(Check);
         await CheckRequestsAsync(Check);
         return count;
     }
@@ -59,7 +60,7 @@ internal static class LocalAuthTests
             Check("本地认证仅发往固定官方HTTPS地址", request.Method == HttpMethod.Get && request.RequestUri!.AbsoluteUri == "https://chatgpt.com/backend-api/wham/usage");
             Check("凭据仅在Authorization和账号请求头", request.Headers.Authorization?.Parameter == FakeToken &&
                 request.Headers.GetValues("ChatGPT-Account-Id").Single() == "fixture-account");
-            return new(HttpStatusCode.OK) { Content = new StringContent("""{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":20,"limit_window_seconds":18000,"reset_at":2000000000},"secondary_window":{"used_percent":55,"limit_window_seconds":604800,"reset_at":2000000000}}}""") };
+            return new(HttpStatusCode.OK) { Content = new StringContent("""{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":20,"limit_window_seconds":18000,"reset_at":2000000000},"secondary_window":{"used_percent":55,"limit_window_seconds":604800,"reset_at":2000000000}}}""", Encoding.UTF8, "application/json") };
         });
         using var http = new HttpClient(handler);
         var source = new LocalCodexQuotaSource(http, file.PathName);
@@ -68,9 +69,10 @@ internal static class LocalAuthTests
         Check("账号模型不带访问凭据", !JsonSerializer.Serialize(accounts).Contains(FakeToken));
         Check("只读认证文件未改写", File.ReadAllBytes(file.PathName).SequenceEqual(original));
         File.WriteAllText(file.PathName, AuthJson(account: "fixture-next"), new UTF8Encoding(false));
-        using var nextHttp = new HttpClient(new LocalHandler(_ => new(HttpStatusCode.OK) { Content = new StringContent("{}") }));
+        using var nextHttp = new HttpClient(new LocalHandler(_ => new(HttpStatusCode.OK) { Content = new StringContent("{}", Encoding.UTF8, "application/json") }));
         var changed = await new LocalCodexQuotaSource(nextHttp, file.PathName).ReadAsync(default);
         Check("刷新重新读取换号认证", changed[0].Id == "local:fixture-next");
+        await CheckInvalidResponsesAsync(file.PathName, Check);
         foreach (var code in new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound })
         {
             using var failedHttp = new HttpClient(new LocalHandler(_ => new(code) { Content = new StringContent("secret-response-body") }));
@@ -80,6 +82,24 @@ internal static class LocalAuthTests
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         try { await source.ReadAsync(cancellation.Token); Check("本地刷新可取消", false); }
         catch (OperationCanceledException) { Check("本地刷新可取消", true); }
+    }
+
+    private static async Task CheckInvalidResponsesAsync(string path, Action<string, bool> Check)
+    {
+        foreach (var (body, media, expected) in new[] {
+            ("<html>private-response</html>", "text/html", "未返回JSON"),
+            ("private-response", "application/json", "JSON无效"),
+            ("[]", "application/json", "JSON结构不兼容") })
+        {
+            using var http = new HttpClient(new LocalHandler(_ => new(HttpStatusCode.OK) {
+                Content = new StringContent(body, Encoding.UTF8, media) }));
+            try { await new LocalCodexQuotaSource(http, path).ReadAsync(default); Check("拒绝错误额度响应", false); }
+            catch (FormatException error)
+            { Check("额度响应错误定位且不泄露正文", error.Message.Contains(expected) && !error.Message.Contains("private-response")); }
+        }
+        using var bomHttp = new HttpClient(new LocalHandler(_ => new(HttpStatusCode.OK) {
+            Content = new StringContent("\ufeff{}", Encoding.UTF8, "application/json") }));
+        Check("额度JSON兼容UTF8 BOM", (await new LocalCodexQuotaSource(bomHttp, path).ReadAsync(default)).Count == 1);
     }
 
     private static string AuthJson(string? account = "fixture-account", string access = FakeToken, string? id = null) =>

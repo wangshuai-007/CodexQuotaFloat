@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 
 namespace QuotaFloat.Core;
@@ -15,7 +16,9 @@ internal sealed class CodexRpc : IDisposable
     {
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Hidden, WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), RedirectStandardInput = true,
-            RedirectStandardOutput = true, RedirectStandardError = true };
+            RedirectStandardOutput = true, RedirectStandardError = true,
+            StandardInputEncoding = new UTF8Encoding(false), StandardOutputEncoding = new UTF8Encoding(false, true),
+            StandardErrorEncoding = new UTF8Encoding(false) };
         start.ArgumentList.Add("app-server");
         process = Process.Start(start) ?? throw new IOException("无法启动Codex CLI");
         stderr = DrainAsync(process.StandardError);
@@ -37,7 +40,7 @@ internal sealed class CodexRpc : IDisposable
         await process.StandardInput.FlushAsync(token);
         for (var i = 0; i < 100; i++)
         {
-            using var message = JsonDocument.Parse(await ReadLineAsync(token));
+            using var message = ParseMessage(await ReadLineAsync(token));
             var root = message.RootElement;
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("id", out var actual) ||
                 actual.ValueKind != JsonValueKind.Number || !actual.TryGetInt32(out var value) || value != requestId) continue;
@@ -49,13 +52,24 @@ internal sealed class CodexRpc : IDisposable
         throw new FormatException("Codex CLI响应过多，无法匹配额度请求");
     }
 
+    private static JsonDocument ParseMessage(string line)
+    {
+        try { return JsonDocument.Parse(line.TrimStart('\ufeff')); }
+        catch (JsonException)
+        { throw new FormatException("Codex CLI未返回有效JSON协议；请更新原生codex.exe，或手动选择ChatGPT认证文件"); }
+    }
+
     private async Task<string> ReadLineAsync(CancellationToken token)
     {
         var text = new System.Text.StringBuilder();
         var buffer = new char[1];
         while (text.Length < 2 * 1024 * 1024)
         {
-            if (await process.StandardOutput.ReadAsync(buffer.AsMemory(), token) == 0) throw new IOException("Codex CLI已退出");
+            int read;
+            try { read = await process.StandardOutput.ReadAsync(buffer.AsMemory(), token); }
+            catch (DecoderFallbackException)
+            { throw new FormatException("Codex CLI协议不是有效UTF8；请更新原生codex.exe，不显示协议正文"); }
+            if (read == 0) throw new IOException("Codex CLI已退出");
             if (buffer[0] == '\n') return text.ToString();
             if (buffer[0] != '\r') text.Append(buffer[0]);
         }

@@ -19,9 +19,23 @@ public sealed class LocalCodexQuotaSource(HttpClient client, string? authPath) :
         using var response = await client.SendAsync(request, token);
         if (!response.IsSuccessStatusCode)
             throw new HttpRequestException("本地Codex额度查询失败", null, response.StatusCode);
-        using var usage = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token));
+        using var usage = await ReadUsageAsync(response.Content, token);
+        if (usage.RootElement.ValueKind != JsonValueKind.Object)
+            throw new FormatException("本地额度接口JSON结构不兼容；预期为额度对象");
         var account = CpaParser.Parse(usage.RootElement, "local:" + auth.AccountId, auth.Name, auth.Plan);
         return [account];
+    }
+
+    private static async Task<JsonDocument> ReadUsageAsync(HttpContent content, CancellationToken token)
+    {
+        var media = content.Headers.ContentType?.MediaType;
+        if (media is not null && !media.Equals("application/json", StringComparison.OrdinalIgnoreCase) &&
+            !media.EndsWith("+json", StringComparison.OrdinalIgnoreCase))
+            throw new FormatException("额度接口未返回JSON；请检查网络代理或网页验证，认证文件并非解析失败");
+        var text = await content.ReadAsStringAsync(token);
+        try { return JsonDocument.Parse(text.TrimStart('\ufeff')); }
+        catch (JsonException)
+        { throw new FormatException("额度接口返回的JSON无效；请检查网络代理或服务响应，不显示响应正文"); }
     }
 
     /// <summary>仅输出固定说明与HTTP状态，不输出路径、凭据或服务响应正文。</summary>
@@ -37,7 +51,7 @@ public sealed class LocalCodexQuotaSource(HttpClient client, string? authPath) :
         HttpRequestException => "无法连接本地Codex额度服务；请检查网络或代理",
         OperationCanceledException => "本地额度查询超时；可手动刷新",
         FormatException => error.Message.StartsWith("CPA", StringComparison.Ordinal) ? "本地额度响应格式不兼容" : error.Message,
-        JsonException => "本地认证或额度JSON格式无效；不显示错误正文",
+        JsonException => "本地额度协议JSON无效；请更新Codex CLI或检查网络代理，不显示错误正文",
         ArgumentException => "本地认证文件路径或请求参数无效；请检查设置",
         _ => "本地Codex额度读取失败"
     };

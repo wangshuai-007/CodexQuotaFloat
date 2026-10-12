@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 
 namespace QuotaFloat.Core;
 
@@ -42,8 +43,26 @@ public sealed class LocalCodexAuth
             count += read;
         }
         if (count > 1024 * 1024) throw new FormatException("本地认证文件过大");
-        using var json = JsonDocument.Parse(bytes.AsMemory(0, count));
-        return Parse(json.RootElement, DateTimeOffset.UtcNow);
+        return ParseFile(bytes.AsMemory(0, count));
+    }
+
+    private static LocalCodexAuth ParseFile(ReadOnlyMemory<byte> bytes)
+    {
+        try
+        {
+            var span = bytes.Span;
+            string text;
+            if (span.StartsWith(new byte[] { 0xff, 0xfe }))
+                text = new UnicodeEncoding(false, false, true).GetString(span[2..]);
+            else if (span.StartsWith(new byte[] { 0xfe, 0xff }))
+                text = new UnicodeEncoding(true, false, true).GetString(span[2..]);
+            else
+                text = new UTF8Encoding(false, true).GetString(span.StartsWith(new byte[] { 0xef, 0xbb, 0xbf }) ? span[3..] : span);
+            using var json = JsonDocument.Parse(text);
+            return Parse(json.RootElement, DateTimeOffset.UtcNow);
+        }
+        catch (Exception error) when (error is JsonException or DecoderFallbackException)
+        { throw new FormatException("认证文件不是有效JSON或编码无效；请选择Codex的auth.json，不要选择config.toml或日志文件"); }
     }
 
     /// <summary>提取ChatGPT登录的访问令牌及工作区标识；API Key不能查询订阅额度。</summary>

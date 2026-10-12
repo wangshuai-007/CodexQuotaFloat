@@ -34,7 +34,7 @@ public sealed class CodexCliQuotaSource(string executable) : IQuotaSource, IDisp
         var root = identity.RootElement;
         if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("account", out var account) ||
             account.ValueKind != JsonValueKind.Object || CpaParser.Text(account, "type") != "chatgpt")
-            throw new FormatException("Codex CLI未以ChatGPT登录；请在Codex登录后刷新，API Key不提供订阅额度");
+            throw new FormatException("Codex CLI未使用ChatGPT认证；可能与桌面登录不同。请选ChatGPT的auth.json，API Key无法查订阅额度");
         var name = CpaParser.Text(account, "email") ?? "本地Codex账号";
         var plan = CpaParser.Text(account, "planType") ?? "Codex";
         using var limits = await connection.RequestAsync("account/rateLimits/read", new { }, token);

@@ -7,6 +7,7 @@ Windows x64 的多账号 Codex 额度浮窗。
 - 悬停逐账号详情、滚轮切换、点击全部列表、本地账号排序。
 - 屏幕边缘停靠、置顶、多屏定位；跟随 Codex 并保存拖动后的相对位置。
 - CPA 或本地 Codex 认证读取额度；Keeper 只读查询最近60秒 Token 流量。
+- 本地认证兼容UTF8/BOM/UTF16；CLI使用UTF8协议，分别提示认证文件、额度响应和CLI协议错误。
 
 ## 下载
 - `self-contained.zip`：包含 .NET 10 Desktop 运行时，无需另装 .NET。推荐普通用户使用。

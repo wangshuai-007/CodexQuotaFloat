@@ -26,6 +26,21 @@ internal static class CodexCliTests
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         try { await new CodexCliQuotaSource(executable).ReadAsync(cancellation.Token); Check("CLI刷新可取消", false); }
         catch (OperationCanceledException) { Check("CLI刷新可取消且回收自建进程", true); }
+        await CheckInvalidProtocolAsync(executable, Check);
         return count;
+    }
+
+    private static async Task CheckInvalidProtocolAsync(string executable, Action<string, bool> check)
+    {
+        var original = Environment.GetEnvironmentVariable("QUOTA_FLOAT_TEST_INVALID_RPC");
+        try
+        {
+            Environment.SetEnvironmentVariable("QUOTA_FLOAT_TEST_INVALID_RPC", "1");
+            using var source = new CodexCliQuotaSource(executable);
+            try { await source.ReadAsync(default); check("拒绝异常CLI协议", false); }
+            catch (FormatException error)
+            { check("CLI协议失败独立提示不泄露正文", error.Message.StartsWith("Codex CLI未返回") && !error.Message.Contains("private-protocol")); }
+        }
+        finally { Environment.SetEnvironmentVariable("QUOTA_FLOAT_TEST_INVALID_RPC", original); }
     }
 }

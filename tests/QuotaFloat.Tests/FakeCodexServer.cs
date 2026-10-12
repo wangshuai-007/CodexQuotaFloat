@@ -4,8 +4,15 @@ internal static class FakeCodexServer
 {
     internal static async Task RunAsync()
     {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
         while (await Console.In.ReadLineAsync() is { } line)
         {
+            if (Environment.GetEnvironmentVariable("QUOTA_FLOAT_TEST_INVALID_RPC") == "1")
+            {
+                Console.WriteLine("private-protocol-not-json");
+                await Console.Out.FlushAsync();
+                continue;
+            }
             using var message = JsonDocument.Parse(line);
             if (!message.RootElement.TryGetProperty("id", out var id)) continue;
             var method = message.RootElement.GetProperty("method").GetString();
@@ -18,7 +25,7 @@ internal static class FakeCodexServer
                     secondary = new { usedPercent = 55, windowDurationMins = 10080, resetsAt = 2000000000 } } },
                 _ => throw new InvalidOperationException("测试不允许的协议方法")
             };
-            Console.WriteLine("{\"method\":\"fixture/notification\",\"params\":{}}");
+            Console.WriteLine("\ufeff{\"method\":\"fixture/notification\",\"params\":{}}");
             Console.WriteLine(JsonSerializer.Serialize(new { id = id.GetInt32(), result }));
             await Console.Out.FlushAsync();
         }
