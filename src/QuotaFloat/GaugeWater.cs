@@ -41,8 +41,10 @@ public sealed partial class QuotaGauge
     {
         if (DisplayMode == QuotaDisplayMode.Split)
         {
-            Text(dc, "5h " + (fiveUnknown ? "—" : $"{Level:0}%"), 16, 8, Level >= 99.5 ? 8 : 9, Five, "Bahnschrift");
-            Text(dc, "7d " + (weekUnknown ? "—" : $"{WeeklyLevel:0}%"), 16, 22, WeeklyLevel >= 99.5 ? 8 : 9, Week, "Bahnschrift");
+            Text(dc, "5h", 8, 10, 8, Five);
+            Text(dc, "7d", 24, 10, 8, Week);
+            Text(dc, fiveUnknown ? "—" : $"{Level:0}%", 8, 23, 7, Ink, "Bahnschrift");
+            Text(dc, weekUnknown ? "—" : $"{WeeklyLevel:0}%", 24, 23, 7, Ink, "Bahnschrift");
         }
         else
         {
@@ -57,37 +59,15 @@ public sealed partial class QuotaGauge
     {
         if (DisplayMode == QuotaDisplayMode.Split)
         {
-            DrawSplitWater(dc);
+            DrawWaterPart(dc, Level, fiveUnknown, 0, 16, false);
+            DrawWaterPart(dc, WeeklyLevel, weekUnknown, 16, 16, true);
+            dc.DrawLine(new Pen(BrushOf("#8AAEB2"), 0.6), new Point(16, 43), new Point(16, 278));
         }
         else
         {
             var weekly = DisplayMode == QuotaDisplayMode.SevenDay;
             DrawWaterPart(dc, weekly ? WeeklyLevel : Level, weekly ? weekUnknown : fiveUnknown, 0, 32, weekly);
         }
-    }
-
-    private void DrawSplitWater(DrawingContext dc)
-    {
-        const double top = 43, bottom = 204;
-        dc.DrawRectangle(BrushOf("#E9F3FB"), null, new Rect(1, top, 14, bottom - top));
-        dc.DrawRectangle(BrushOf("#E6F5ED"), null, new Rect(17, top, 14, bottom - top));
-        DrawSplitPart(dc, Level, fiveUnknown, 1, top, bottom, Five, "#77B8E1");
-        DrawSplitPart(dc, WeeklyLevel, weekUnknown, 17, top, bottom, Week, "#72C7A7");
-        dc.DrawRectangle(BrushOf("#FDFDFC"), null, new Rect(15, 42, 2, bottom - 42));
-        dc.DrawLine(new Pen(Five, 2), new Point(2, top), new Point(14, top));
-        dc.DrawLine(new Pen(Week, 2), new Point(18, top), new Point(30, top));
-    }
-
-    private void DrawSplitPart(DrawingContext dc, double level, bool unknown, double left,
-        double top, double bottom, Brush color, string light)
-    {
-        if (unknown) return;
-        var y = bottom - Math.Clamp(level, 0, 100) / 100 * (bottom - top);
-        var gradient = new LinearGradientBrush(ColorOf(light), ((SolidColorBrush)color).Color, 90)
-            { Opacity = stale ? 0.28 : 0.82 };
-        dc.DrawRectangle(gradient, null, new Rect(left, y, 14, bottom - y));
-        dc.DrawLine(new Pen(color, 1.5),
-            new Point(left + 1, y), new Point(left + 13, y));
     }
 
     private void DrawWaterPart(DrawingContext dc, double level, bool unknown, double left, double width, bool weekly)

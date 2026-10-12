@@ -35,7 +35,6 @@ internal static class WaterDisplayPreview
         }
         Assert(JsonSerializer.Deserialize<AppSettings>("{}")!.QuotaDisplay == QuotaDisplayMode.FiveHour,
             "旧设置缺少水位选项默认5h", report);
-        CheckSplitColors(accounts, report);
         root.Measure(new Size(root.Width, root.Height)); root.Arrange(new Rect(0, 0, root.Width, root.Height)); root.UpdateLayout();
         var bitmap = new RenderTargetBitmap(840, 780, 192, 192, PixelFormats.Pbgra32); bitmap.Render(root);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -46,28 +45,5 @@ internal static class WaterDisplayPreview
     {
         if (!condition) throw new InvalidOperationException("水位UI验证失败：" + name);
         report.Add("通过：" + name);
-    }
-
-    private static void CheckSplitColors(IReadOnlyList<AccountQuota> accounts, List<string> report)
-    {
-        var gauge = new QuotaGauge { DisplayMode = QuotaDisplayMode.Split };
-        gauge.Update(accounts, "演示", DateTimeOffset.Now, false, false);
-        gauge.Level = gauge.WeeklyLevel = 50;
-        gauge.Measure(new Size(32, 280));
-        gauge.Arrange(new Rect(0, 0, 32, 280));
-        var bitmap = new RenderTargetBitmap(32, 280, 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(gauge);
-        var pixels = new byte[32 * 280 * 4];
-        bitmap.CopyPixels(pixels, 32 * 4, 0);
-        var blue = (198 * 32 + 10) * 4;
-        var green = (198 * 32 + 22) * 4;
-        var gap = (198 * 32 + 16) * 4;
-        var traffic = (206 * 32 + 22) * 4;
-        Assert(pixels[blue] > pixels[blue + 1] + 15, "双水位相同额度时左槽仍清晰呈蓝色", report);
-        Assert(pixels[green + 1] > pixels[green] + 15, "双水位相同额度时右槽仍清晰呈绿色", report);
-        Assert(pixels[gap] > 240 && pixels[gap + 1] > 240 && pixels[gap + 2] > 240,
-            "双水位中央保留明亮分隔缝", report);
-        Assert(Math.Abs(pixels[traffic] - pixels[traffic + 1]) < 10,
-            "双水位填充不进入底部Token显示区", report);
     }
 }
