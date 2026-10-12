@@ -62,6 +62,7 @@ public static class PreviewHarness
         await HoverPreview.RunAsync(output, report);
         LocalAuthPreview.Run(output, report);
         await WaterDisplayPreview.RunAsync(output, report);
+        TrafficRatePreview.Run(output, report);
         CheckGeometry(report);
         File.WriteAllLines(Path.Combine(output, "ui-checks.txt"), report.Append(
             "限制：离线WPF渲染及属性/几何验证，不替代真实鼠标悬停、系统置顶或多屏混合DPI人工验收。"), new UTF8Encoding(false));

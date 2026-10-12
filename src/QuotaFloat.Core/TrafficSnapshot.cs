@@ -4,6 +4,25 @@ namespace QuotaFloat.Core;
 public sealed record TrafficSnapshot(long? Tokens, int? Requests, IReadOnlyList<long> Buckets,
     DateTimeOffset? UpdatedAt, string? Error = null)
 {
+    /// <summary>两次成功快照间新增Token除以实际秒数；首次采样或不可用时为未知。</summary>
+    public double? TokensPerSecond { get; init; }
+    /// <summary>两次成功快照间新增请求除以实际秒数；不是进行中请求数。</summary>
+    public double? RequestsPerSecond { get; init; }
+    /// <summary>实际成功采样间隔秒数，慢请求时不假装1秒。</summary>
+    public double? SampleSeconds { get; init; }
+    public string TokenRateLabel => RateLabel(TokensPerSecond);
+    public string RequestRateLabel => RateLabel(RequestsPerSecond);
+
+    /// <summary>超过3秒未收到快照时停止显示旧瞬时速率，历史窗口仍保留截至时间。</summary>
+    public TrafficSnapshot ForDisplay(DateTimeOffset now) => UpdatedAt is { } time && now - time > TimeSpan.FromSeconds(3)
+        ? this with { TokensPerSecond = null, RequestsPerSecond = null, Error = "流量快照已超过3秒未更新" } : this;
+
+    private static string RateLabel(double? value) => value switch
+    {
+        null => "—", >= 1_000_000 => $"{value / 1_000_000:0.#}m",
+        >= 1_000 => $"{value / 1_000:0.#}k", _ => $"{value:0.#}"
+    };
+
     public static TrafficSnapshot Unknown(string? error = null) => new(null, null, [], null, error);
 
     /// <summary>按千/百万缩写显示Token；保持单位在界面旁明确标注。</summary>

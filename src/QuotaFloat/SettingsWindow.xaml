@@ -40,12 +40,12 @@
   <PasswordBox x:Name="KeyOption"/>
   <TextBlock Text="也可通过 CPA_MANAGEMENT_KEY 环境变量提供。只查询额度，不重置账号；远端地址必须使用 HTTPS。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0"/>
   </StackPanel>
-  <TextBlock Text="同步间隔（5–3600秒；额度与流量独立刷新）" Margin="0,16,0,6" FontSize="14"/>
+  <TextBlock Text="额度同步间隔（5–3600秒；流量固定每秒独立取数）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="IntervalOption"/>
   <StackPanel x:Name="TrafficSection">
   <TextBlock Text="只读流量快照地址（可选，同CPA域名及端口）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="TrafficUrlOption"/>
-  <TextBlock Text="仅统计最近60秒已完成请求的Token与次数，不消费usage队列。旧版可留空读取 /usage；CPA v8需提供只读统计服务。短间隔会增加查询频率，不显示进行中请求的逐Token流。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0"/>
+  <TextBlock Text="每秒GET只读快照，Token/s为新增已完成请求用量÷实际采样间隔，非生成速度；同时保留60秒累计。首帧建立基线，慢请求不重叠。旧版可留空读取 /usage；CPA v8需提供只读统计服务。不消费usage队列，服务自身缓存会影响实时性。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0"/>
   </StackPanel>
   <TextBlock x:Name="ValidationError" Foreground="{StaticResource Danger}" TextWrapping="Wrap" FontSize="14" Margin="0,12,0,0"/>
   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">

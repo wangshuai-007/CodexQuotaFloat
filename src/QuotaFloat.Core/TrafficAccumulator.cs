@@ -8,6 +8,10 @@ public sealed class TrafficAccumulator
     private readonly List<(DateTimeOffset Time, long Tokens, string? Id)> events = [];
     private readonly HashSet<string> seen = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> occurrences = new(StringComparer.Ordinal);
+    private DateTimeOffset? sampledAt;
+    private long addedTokens;
+    private int addedRequests;
+    private double? tokensPerSecond, requestsPerSecond, sampleSeconds;
 
     /// <summary>读取只读记录快照或旧版usage中的details；格式错误不部分写入。</summary>
     public void Ingest(JsonElement root, DateTimeOffset now)
@@ -15,7 +19,8 @@ public sealed class TrafficAccumulator
         Prune(now);
         var previous = events.ToArray();
         occurrences.Clear();
-        try { ReadSnapshot(root, now); }
+        addedTokens = 0; addedRequests = 0;
+        try { ReadSnapshot(root, now); UpdateRate(now); }
         catch
         {
             events.Clear(); events.AddRange(previous);
@@ -48,12 +53,26 @@ public sealed class TrafficAccumulator
             var index = Math.Clamp(11 - (int)((now - item.Time).TotalSeconds / 5), 0, 11);
             buckets[index] = SaturatingAdd(buckets[index], item.Tokens);
         }
-        return new(events.Aggregate(0L, (sum, item) => SaturatingAdd(sum, item.Tokens)),
-            events.Count, buckets, now);
+        return new TrafficSnapshot(events.Aggregate(0L, (sum, item) => SaturatingAdd(sum, item.Tokens)),
+            events.Count, buckets, sampledAt)
+        { TokensPerSecond = tokensPerSecond, RequestsPerSecond = requestsPerSecond, SampleSeconds = sampleSeconds }.ForDisplay(now);
     }
 
     /// <summary>切换CPA或数据源时清除旧窗口。</summary>
-    public void Clear() { events.Clear(); seen.Clear(); }
+    public void Clear()
+    {
+        events.Clear(); seen.Clear(); sampledAt = null;
+        tokensPerSecond = null; requestsPerSecond = null; sampleSeconds = null;
+    }
+
+    private void UpdateRate(DateTimeOffset now)
+    {
+        sampleSeconds = sampledAt is { } previous ? (now - previous).TotalSeconds : null;
+        var valid = sampleSeconds is > 0;
+        tokensPerSecond = valid ? addedTokens / sampleSeconds : null;
+        requestsPerSecond = valid ? addedRequests / sampleSeconds : null;
+        sampledAt = now;
+    }
 
     private void ReadRecords(JsonElement records, DateTimeOffset now)
     {
@@ -82,6 +101,8 @@ public sealed class TrafficAccumulator
             // 无request_id的旧快照仅保留不可逆摘要，避免留存API密钥等响应字段。
             if (id is not null && !seen.Add(id)) continue;
             events.Add((time, total, id));
+            addedTokens = SaturatingAdd(addedTokens, total);
+            addedRequests++;
             if (events.Count > 20_000) throw new FormatException("流量窗口记录过多");
         }
         if (events.Count > 20_000) throw new FormatException("流量窗口记录过多");

@@ -7,7 +7,7 @@ using QuotaFloat.Core;
 
 namespace QuotaFloat;
 
-/// <summary>32×280窄水柱，最多10组账号线，底部显示最近60秒流量。</summary>
+/// <summary>32×280窄水柱，最多10组账号线，底部显示每秒速率与60秒趋势。</summary>
 public sealed partial class QuotaGauge : FrameworkElement
 {
     public const double AccountsTop = 48;

@@ -7,8 +7,7 @@ namespace QuotaFloat;
 /// <summary>独立流量刷新，额度查询耗时不阻塞流量；只读快照，无消费队列请求。</summary>
 internal sealed class TrafficSession : IDisposable
 {
-    private readonly HttpClient http = new(new HttpClientHandler { AllowAutoRedirect = false })
-        { Timeout = TimeSpan.FromSeconds(4), MaxResponseContentBufferSize = 2 * 1024 * 1024 };
+    private readonly HttpClient http;
     private readonly TrafficAccumulator accumulator = new();
     private CancellationTokenSource cancellation = new();
     private AppSettings settings;
@@ -19,7 +18,12 @@ internal sealed class TrafficSession : IDisposable
     internal TrafficSnapshot Snapshot { get; private set; } = TrafficSnapshot.Unknown();
     internal event Action? Changed;
 
-    internal TrafficSession(AppSettings options, string managementKey) { settings = options; key = managementKey; }
+    internal TrafficSession(AppSettings options, string managementKey, HttpMessageHandler? handler = null)
+    {
+        http = new(handler ?? new HttpClientHandler { AllowAutoRedirect = false })
+            { Timeout = TimeSpan.FromSeconds(4), MaxResponseContentBufferSize = 2 * 1024 * 1024 };
+        settings = options; key = managementKey;
+    }
 
     internal void Configure(AppSettings options, string managementKey)
     {
@@ -51,6 +55,7 @@ internal sealed class TrafficSession : IDisposable
             {
                 using var data = await new CpaTrafficSource(http, settings.ManagementUrl, key, settings.TrafficSnapshotUrl).ReadAsync(token);
                 if (current != version) return;
+                now = DateTimeOffset.Now;
                 accumulator.Ingest(data.RootElement, now);
                 Snapshot = accumulator.Snapshot(now);
             }
@@ -74,10 +79,11 @@ internal sealed class TrafficSession : IDisposable
 
     private static TrafficSnapshot Demo(DateTimeOffset now)
     {
-        var phase = (int)(now.ToUnixTimeSeconds() / 5 % 12);
+        var phase = (int)(now.ToUnixTimeSeconds() % 12);
         long[] values = [0, 320, 170, 650, 120, 0, 930, 440, 170, 780, 220, 510];
         var buckets = Enumerable.Range(0, 12).Select(i => values[(i + phase) % 12]).ToArray();
-        return new(buckets.Sum(), 18, buckets, now);
+        return new TrafficSnapshot(buckets.Sum(), 18, buckets, now)
+            { TokensPerSecond = values[phase], RequestsPerSecond = phase % 3, SampleSeconds = 1 };
     }
 
     public void Dispose() { version++; cancellation.Cancel(); cancellation.Dispose(); http.Dispose(); }

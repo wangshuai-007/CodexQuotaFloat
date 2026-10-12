@@ -118,6 +118,7 @@ Check("允许远端HTTPS", CpaQuotaSource.ValidateUrl("https://example.com/v8/ma
 passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
 passed += WaterDisplayTests.Run();
+passed += TrafficRateTests.Run();
 passed += ManagementKeyTests.Run();
 passed += await TrafficOrderingTests.RunAsync();
 passed += await LocalAuthTests.RunAsync();

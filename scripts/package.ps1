@@ -1,6 +1,7 @@
+param([string]$PublishDirectory = "dist")
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$dist = Join-Path $root "dist"
+$dist = Join-Path $root $PublishDirectory
 $readme = Join-Path $root "README.md"
 $preview = Join-Path $root "artifacts/preview-hover.png"
 $archive = Join-Path $root "artifacts/CodexQuotaFloat-win-x64.zip"

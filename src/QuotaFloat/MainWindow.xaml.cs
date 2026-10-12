@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private int wheelRemainder;
     private readonly DispatcherTimer hoverTimer = new() { Interval = TimeSpan.FromMilliseconds(330) };
     private readonly DispatcherTimer refreshTimer = new();
+    private readonly DispatcherTimer trafficTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DispatcherTimer clockTimer = new() { Interval = TimeSpan.FromMinutes(1) };
     private readonly System.Windows.Forms.NotifyIcon tray = new();
     private Point? pressStart;
@@ -29,13 +30,14 @@ public partial class MainWindow : Window
     private bool settingsOpen;
     private readonly ContextMenu menu = new();
 
-    public MainWindow(AppSettings options, string key, bool persist = true)
+    /// <summary>创建浮窗；可注入只读流量传输用于离线验证，不改用户设置。</summary>
+    public MainWindow(AppSettings options, string key, bool persist = true, System.Net.Http.HttpMessageHandler? trafficHandler = null)
     {
         persistSettings = persist;
         settings = options;
         managementKey = key;
         session = new QuotaSession(settings, key);
-        traffic = new TrafficSession(settings, key);
+        traffic = new TrafficSession(settings, key, trafficHandler);
         InitializeComponent();
         Icon = (System.Windows.Media.ImageSource)FindResource("AppIcon");
         Topmost = settings.AlwaysOnTop;
@@ -54,7 +56,7 @@ public partial class MainWindow : Window
         Closing += (_, _) => SavePosition();
         Closed += (_, _) =>
         {
-            refreshTimer.Stop(); clockTimer.Stop(); hoverTimer.Stop();
+            refreshTimer.Stop(); trafficTimer.Stop(); clockTimer.Stop(); hoverTimer.Stop();
             tray.ContextMenuStrip?.Dispose(); tray.Dispose(); trayIcon?.Dispose();
             session.Dispose(); traffic.Dispose(); details.Close(); peek.Close();
         };
@@ -95,9 +97,11 @@ public partial class MainWindow : Window
             Gauge.ClearHighlight();
         };
         refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
-        refreshTimer.Tick += async (_, _) => await RefreshAll();
+        refreshTimer.Tick += async (_, _) => { if (!session.AutoRefreshPaused) await session.RefreshAsync(); };
+        trafficTimer.Tick += async (_, _) => { UpdateTraffic(); await traffic.RefreshAsync(); };
         clockTimer.Tick += (_, _) => UpdateViews();
         refreshTimer.Start();
+        trafficTimer.Start();
         clockTimer.Start();
     }
 
@@ -160,8 +164,9 @@ public partial class MainWindow : Window
 
     private void UpdateTraffic()
     {
-        Gauge.SetTraffic(traffic.Snapshot);
-        details.SetTraffic(traffic.Snapshot, settings.UseDemo);
+        var snapshot = traffic.Snapshot.ForDisplay(DateTimeOffset.Now);
+        Gauge.SetTraffic(snapshot);
+        details.SetTraffic(snapshot, settings.UseDemo);
     }
 
     private void RestorePosition()

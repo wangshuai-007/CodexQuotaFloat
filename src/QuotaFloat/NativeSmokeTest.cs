@@ -31,6 +31,7 @@ public partial class MainWindow
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);
         await CheckSortingAndTrafficAsync(checks);
+        await CheckTrafficCadenceAsync(checks);
         await CheckMonitorsAsync(checks);
         Directory.CreateDirectory(output);
         File.WriteAllLines(Path.Combine(output, "native-checks.txt"), checks.Append(
