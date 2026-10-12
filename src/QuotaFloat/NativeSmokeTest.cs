@@ -60,7 +60,7 @@ public partial class MainWindow
         Check(peek.Owner == this && IsNativeTopmost(this) && IsNativeTopmost(peek), "小卡Owner和原生置顶标志正确", checks);
         SetTopmost(false);
         await Task.Delay(60);
-        Check(!IsNativeTopmost(this) && !IsNativeTopmost(peek), "主浮窗与小卡置顶关闭", checks);
+        Check(!IsNativeTopmost(this) && IsNativeTopmost(peek), "主浮窗关闭置顶时悬停提示仍置顶", checks);
         SetTopmost(true);
     }
 

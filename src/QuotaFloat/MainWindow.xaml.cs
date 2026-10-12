@@ -214,7 +214,7 @@ public partial class MainWindow : Window
         settings.AlwaysOnTop = value;
         Topmost = EffectiveTopmost;
         details.Topmost = EffectiveTopmost;
-        peek.Topmost = EffectiveTopmost;
+        peek.KeepOnTop();
         SavePosition();
         UpdateViews();
     }

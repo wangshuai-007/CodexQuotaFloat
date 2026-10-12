@@ -23,6 +23,7 @@ public sealed partial class AccountPeekWindow : Window
         Background = Brushes.Transparent;
         ShowInTaskbar = false;
         ShowActivated = false;
+        Topmost = true;
         Title = "Codex 单账号额度";
         var shell = new Border { Margin = new Thickness(8), Padding = new Thickness(14, 12, 14, 10),
             CornerRadius = new CornerRadius(14), BorderThickness = new Thickness(1),
@@ -83,10 +84,18 @@ public sealed partial class AccountPeekWindow : Window
     /// <summary>首次出现淡入；在账号间切换时保持显示，不闪烁也不抢焦点。</summary>
     public void Reveal(bool reducedMotion)
     {
-        if (IsVisible) return;
+        if (IsVisible) { KeepOnTop(); return; }
         Show();
+        KeepOnTop();
         if (!reducedMotion && SystemParameters.ClientAreaAnimation)
             BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(100)));
+    }
+
+    /// <summary>仅悬停卡始终置顶，不激活窗口；重申原生层级以抵消Owner切换产生的降级。</summary>
+    internal void KeepOnTop()
+    {
+        Topmost = true;
+        if (IsVisible) NativePlacement.RaisePopup(this);
     }
 
     private static Brush Resource(string key) => (Brush)Application.Current.FindResource(key);

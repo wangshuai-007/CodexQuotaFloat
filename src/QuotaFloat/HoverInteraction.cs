@@ -32,7 +32,7 @@ public partial class MainWindow
 
     private void UpdatePeek()
     {
-        peek.Topmost = EffectiveTopmost;
+        peek.KeepOnTop();
         if (waterPeek)
         {
             peek.UpdateWater(DisplayAccounts, DateTimeOffset.Now,

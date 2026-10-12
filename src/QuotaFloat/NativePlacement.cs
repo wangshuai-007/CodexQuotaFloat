@@ -56,6 +56,14 @@ internal static class NativePlacement
         Move(popup, ScreenPlacement.Detail(area, anchor, width, height));
     }
 
+    /// <summary>把悬停卡提升到置顶层级，不移动、不缩放、不抢焦点。</summary>
+    internal static void RaisePopup(Window popup)
+    {
+        if (!SetWindowPos(new WindowInteropHelper(popup).EnsureHandle(), new IntPtr(-1),
+                0, 0, 0, 0, 0x0013))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "无法置顶悬停提示");
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeRect
     {

@@ -51,7 +51,7 @@ public partial class MainWindow
             attachedClient = next;
             Topmost = EffectiveTopmost;
             details.Topmost = EffectiveTopmost;
-            peek.Topmost = EffectiveTopmost;
+            peek.KeepOnTop();
             if (next == IntPtr.Zero) RestorePosition();
         }
         if (next == IntPtr.Zero)
@@ -68,6 +68,7 @@ public partial class MainWindow
         {
             try { if (!ClientAttachment.Place(this, next, OwnHandles, FollowOffset)) AttachmentFailed(); }
             catch (Win32Exception) { AttachmentFailed(); }
+            peek.KeepOnTop();
         }
     }
 
@@ -76,7 +77,7 @@ public partial class MainWindow
         attachedClient = IntPtr.Zero;
         Topmost = EffectiveTopmost;
         details.Topmost = EffectiveTopmost;
-        peek.Topmost = EffectiveTopmost;
+        peek.KeepOnTop();
         RestorePosition();
         ApplyClientVisibility(true);
         tray.Text = "Codex 额度浮窗 · 附着失败，已独立显示";

@@ -23,6 +23,7 @@ public partial class MainWindow
             Check(!IsNativeTopmost(this) && !IsNativeTopmost(details), "附着时取消全局置顶，但保留置顶偏好", checks);
             await CheckAttachmentLayersAsync(client, handle, checks);
             await CheckRelativeAttachmentAsync(client, handle, checks);
+            await CheckAttachedPeekLayerAsync(checks);
             pinned = true; Expand();
             client.WindowState = WindowState.Minimized;
             await Task.Delay(650);
