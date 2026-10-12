@@ -21,6 +21,8 @@
 
 - [√] 任务11（AFK）：移除水柱和详情请求次数指标，仅展示Token速率/累计/趋势，保持每秒同步；验证：三种速率状态和原生详情均断言无次数显示。
 
+- [√] 任务12（AFK）：应用每次Build成功自动复制完整输出至release，支持Debug/Release和增量构建，忽略设计器及测试诊断文件；验证：两配置及增量构建7个文件SHA256一致，release exe回归。
+
 ## Codex /goal 执行入口
 按 C:/Codes/CodexQuotaFloat/.helloagents/plans/20261010_quota-float/tasks.md 执行，遵守 requirements.md、plan.md、contract.json；/goal -> ~auto -> ~qa。真实 CPA 凭据仅在用户主动切换数据源时输入，当前演示交付不依赖该输入。
 

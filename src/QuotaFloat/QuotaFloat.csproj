@@ -15,4 +15,16 @@
     <ProjectReference Include="../QuotaFloat.Core/QuotaFloat.Core.csproj" />
     <Resource Include="Assets/App.ico" />
   </ItemGroup>
+  <Target Name="CopyLocalTestRelease" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <LocalTestReleaseDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../release/'))</LocalTestReleaseDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <LocalTestReleaseFiles Include="$(TargetDir)**/*" Exclude="$(TargetDir)preview-error.txt" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LocalTestReleaseFiles)"
+          DestinationFiles="@(LocalTestReleaseFiles->'$(LocalTestReleaseDir)/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" Retries="0" />
+    <Message Text="本地测试版本已更新：$(LocalTestReleaseDir)" Importance="high" />
+  </Target>
 </Project>

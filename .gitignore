@@ -2,6 +2,9 @@
 **/obj/
 dist/
 dist-token-rate/
+dist-token-rate - */
+release/
+release - */
 dist - */
 artifacts/
 *.user

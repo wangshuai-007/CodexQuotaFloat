@@ -1,4 +1,4 @@
-param([string]$PublishDirectory = "dist")
+param([string]$PublishDirectory = "release")
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root $PublishDirectory
