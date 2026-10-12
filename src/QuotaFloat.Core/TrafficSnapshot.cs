@@ -15,6 +15,15 @@ public sealed record TrafficSnapshot(long? Tokens, int? Requests, IReadOnlyList<
     public string TokenRateLabel => RateLabel(TokensPerSecond);
     public string RequestRateLabel => RateLabel(RequestsPerSecond);
 
+    /// <summary>最近60秒已完成请求Token总量除以固定60秒；无记录、异常或过期时未知。</summary>
+    public double? AverageTokensPerSecond => Tokens is > 0 && UpdatedAt is not null && Error is null
+        ? Tokens.Value / 60d : null;
+    /// <summary>浮窗使用的60秒平均速率，不代表进行中请求的生成速度。</summary>
+    public string AverageTokenRateLabel => RateLabel(AverageTokensPerSecond);
+    /// <summary>平均流量的不可用原因，区分无记录与读取失败。</summary>
+    public string AverageRateNotice => Error ?? (Tokens == 0 ? "最近60秒无已完成请求记录" :
+        Tokens is null ? "等待只读统计快照" : "最近60秒已完成请求用量 ÷ 60秒");
+
     /// <summary>超过3秒未收到快照时停止显示旧瞬时速率，历史窗口仍保留截至时间。</summary>
     public TrafficSnapshot ForDisplay(DateTimeOffset now) => UpdatedAt is { } time && now - time > TimeSpan.FromSeconds(3)
         ? this with { TokensPerSecond = null, RequestsPerSecond = null, Error = "流量快照已超过3秒未更新" } : this;

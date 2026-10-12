@@ -42,6 +42,15 @@ internal static class TrafficRateTests
         Check("有效空快照下一秒明确零请求", Read(now.AddSeconds(8)).RequestsPerSecond == 0);
         Check("未接入速率未知", TrafficSnapshot.Unknown().TokenRateLabel == "—");
         Check("Token/s缩写带小数", (second with { TokensPerSecond = 1500 }).TokenRateLabel == "1.5k");
+        Check("平均速率固定除60不受采样间隔影响", second.AverageTokensPerSecond == 20);
+        Check("新增为零时仍显示近期平均水平", Read(now.AddSeconds(9), a).AverageTokensPerSecond == 1000d / 60);
+        Check("187.6k示例平均显示3.1k", (second with { Tokens = 187600 }).AverageTokenRateLabel == "3.1k");
+        Check("首次快照可显示历史平均", (second with { TokensPerSecond = null }).AverageTokenRateLabel == "20");
+        Check("有效空窗口不误示当前零消耗", (second with { Tokens = 0 }).AverageTokenRateLabel == "—");
+        Check("空窗口明确说明无完成记录", (second with { Tokens = 0 }).AverageRateNotice.Contains("无已完成请求"));
+        Check("过期平均速率未知保留历史量", second.ForDisplay(now.AddSeconds(5)).AverageTokensPerSecond is null);
+        Check("窗口到期平均速率未知", Read(now.AddSeconds(61)).AverageTokensPerSecond is null);
+        Check("查询异常不沿用旧平均", (second with { Error = "失败" }).AverageTokenRateLabel == "—");
         return passed;
     }
 }

@@ -8,7 +8,7 @@ public sealed partial class QuotaGauge
 {
     private TrafficSnapshot traffic = TrafficSnapshot.Unknown();
 
-    /// <summary>仅绘制Token/s和最近60秒Token趋势；未知保持破折号。</summary>
+    /// <summary>绘制最近60秒平均Token/s及趋势；无记录或未知保持破折号。</summary>
     public void SetTraffic(TrafficSnapshot value)
     {
         traffic = value;
@@ -17,8 +17,8 @@ public sealed partial class QuotaGauge
 
     private void DrawTraffic(DrawingContext dc)
     {
-        Text(dc, "tk/s", 16, 214, 8, Muted);
-        Text(dc, traffic.TokenRateLabel, 16, 230, traffic.TokenRateLabel.Length > 4 ? 9 : 14, Ink, "Bahnschrift");
+        Text(dc, "均 tk/s", 16, 214, 8, Muted);
+        Text(dc, traffic.AverageTokenRateLabel, 16, 230, traffic.AverageTokenRateLabel.Length > 4 ? 9 : 14, Ink, "Bahnschrift");
         var max = Math.Max(1, traffic.Buckets.DefaultIfEmpty(0).Max());
         for (var i = 0; i < 12; i++)
         {
