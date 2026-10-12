@@ -270,11 +270,7 @@ public partial class MainWindow : Window
         finally
         {
             dragging = false;
-            var area = ScreenPlacement.WorkArea(this);
-            var point = settings.DockToEdge ? ScreenPlacement.Snap(area, Width, Height, Left, Top) :
-                ScreenPlacement.Clamp(area, Width, Height, Left, Top);
-            Left = point.X; Top = point.Y;
-            SavePosition();
+            CompleteDrag();
             if (pinned) Expand();
             else if (Gauge.IsMouseOver) ShowPeekAt(Mouse.GetPosition(Gauge).Y);
         }

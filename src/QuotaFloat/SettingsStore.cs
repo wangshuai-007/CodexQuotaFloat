@@ -14,6 +14,10 @@ public sealed class AppSettings
     public bool ReducedMotion { get; set; }
     /// <summary>跟随Codex桌面主窗口显示/隐藏；默认关闭，CLI不参与联动。</summary>
     public bool FollowCodex { get; set; }
+    /// <summary>附着位置相对客户端左上角的水平偏移，单位为客户端96DPI逻辑像素；空值使用默认位置。</summary>
+    public double? FollowOffsetX { get; set; }
+    /// <summary>附着位置相对客户端左上角的垂直偏移，单位为客户端96DPI逻辑像素；空值使用默认位置。</summary>
+    public double? FollowOffsetY { get; set; }
     /// <summary>水位显示：0=5小时额度；1=7天额度；2=左5小时、右7天。</summary>
     public QuotaDisplayMode QuotaDisplay { get; set; } = QuotaDisplayMode.FiveHour;
     public int DemoCount { get; set; } = 3;
@@ -50,6 +54,9 @@ public static class SettingsStore
             settings.AccountOrder = (settings.AccountOrder ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
             if (settings.Left is { } x && !double.IsFinite(x)) settings.Left = null;
             if (settings.Top is { } y && !double.IsFinite(y)) settings.Top = null;
+            if (settings.FollowOffsetX is not { } dx || !double.IsFinite(dx) ||
+                settings.FollowOffsetY is not { } dy || !double.IsFinite(dy))
+                settings.FollowOffsetX = settings.FollowOffsetY = null;
             return (settings, null);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)

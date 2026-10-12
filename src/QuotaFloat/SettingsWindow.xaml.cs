@@ -100,6 +100,7 @@ public partial class SettingsWindow : Window
             UseDemo = demo, UseLocalAuth = local, LocalAuthPath = LocalAuthOption.Text.Trim(),
             AlwaysOnTop = TopmostOption.IsChecked == true,
             FollowCodex = FollowCodexOption.IsChecked == true,
+            FollowOffsetX = Result.FollowOffsetX, FollowOffsetY = Result.FollowOffsetY,
             DockToEdge = DockOption.IsChecked == true, ReducedMotion = MotionOption.IsChecked == true,
             QuotaDisplay = (QuotaDisplayMode)Math.Clamp(QuotaDisplayOption.SelectedIndex, 0, 2),
             DemoCount = count, RefreshSeconds = interval, ManagementUrl = UrlOption.Text.Trim().TrimEnd('/'),

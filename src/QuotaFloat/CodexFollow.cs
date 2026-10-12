@@ -66,7 +66,7 @@ public partial class MainWindow
         ApplyClientVisibility(available is null ? true : available == true && !covered);
         if (IsVisible && available == true)
         {
-            try { if (!ClientAttachment.Place(this, next, OwnHandles)) AttachmentFailed(); }
+            try { if (!ClientAttachment.Place(this, next, OwnHandles, FollowOffset)) AttachmentFailed(); }
             catch (Win32Exception) { AttachmentFailed(); }
         }
     }

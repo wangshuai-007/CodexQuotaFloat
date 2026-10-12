@@ -18,6 +18,14 @@ internal static class CodexFollowPreview
         if (JsonSerializer.Deserialize<AppSettings>("{}")!.FollowCodex)
             throw new InvalidOperationException("旧设置不应自动开启跟随");
         report.Add("通过：旧设置默认关闭跟随，不突然隐藏独立浮窗");
+        foreach (var value in new[] { 0d, -120d })
+        {
+            var saved = new AppSettings { FollowOffsetX = value, FollowOffsetY = 80 };
+            var restored = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(saved))!;
+            if (restored.FollowOffsetX != value || restored.FollowOffsetY != 80)
+                throw new InvalidOperationException("附着偏移必须保留零值和负值");
+            report.Add("通过：相对附着位置序列化保留零值及负值：" + value);
+        }
         if (!CodexClientWindows.IsClientProcess("Codex") || !CodexClientWindows.IsClientProcess("codex") ||
             CodexClientWindows.IsClientProcess("msedge") || CodexClientWindows.IsClientProcess("CodexQuotaFloat") ||
             !CodexClientWindows.IsClientClass("Chrome_WidgetWin_1") ||

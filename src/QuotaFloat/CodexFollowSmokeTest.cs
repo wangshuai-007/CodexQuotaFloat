@@ -22,6 +22,7 @@ public partial class MainWindow
             Check(IsVisible && clientTimer.IsEnabled, "跟随开关启动500ms窗口状态检查，可见客户端保持浮窗", checks);
             Check(!IsNativeTopmost(this) && !IsNativeTopmost(details), "附着时取消全局置顶，但保留置顶偏好", checks);
             await CheckAttachmentLayersAsync(client, handle, checks);
+            await CheckRelativeAttachmentAsync(client, handle, checks);
             pinned = true; Expand();
             client.WindowState = WindowState.Minimized;
             await Task.Delay(650);
