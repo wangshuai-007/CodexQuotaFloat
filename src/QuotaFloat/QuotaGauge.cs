@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using QuotaFloat.Core;
 
 namespace QuotaFloat;
@@ -20,7 +19,6 @@ public sealed partial class QuotaGauge : FrameworkElement
     private IReadOnlyList<AccountQuota> accounts = [];
     private DateTimeOffset now;
     private string source = "演示";
-    private bool unknown = true;
     private bool stale;
     private bool highlight;
     public event Action? InvokeRequested;
@@ -48,12 +46,7 @@ public sealed partial class QuotaGauge : FrameworkElement
         now = time;
         source = label;
         stale = oldData;
-        var value = QuotaMath.WaterLevel(values, time);
-        unknown = value is null;
-        var target = value ?? 0;
-        if (animate && SystemParameters.ClientAreaAnimation)
-            BeginAnimation(LevelProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(260)));
-        else { BeginAnimation(LevelProperty, null); Level = target; }
+        UpdateWater(values, time, animate);
         InvalidateVisual();
     }
 
@@ -91,8 +84,8 @@ public sealed partial class QuotaGauge : FrameworkElement
         DrawWater(dc);
         for (var i = 0; i < 15; i++)
             dc.DrawLine(new Pen(BrushOf("#9CB5B9"), 0.7), new Point(3, 48 + i * 10), new Point(i % 5 == 0 ? 7 : 5, 48 + i * 10));
-        Text(dc, unknown ? "—" : $"{Level:0}%", 16, 12, 11, Ink, "Bahnschrift");
-        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 29, 9, Muted);
+        DrawWaterLabels(dc);
+        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 35, 8, Muted);
         DrawMeters(dc);
         Text(dc, $"{accounts.Count}", 16, 200, 10, Ink, "Bahnschrift");
         DrawTraffic(dc);
@@ -117,21 +110,6 @@ public sealed partial class QuotaGauge : FrameworkElement
         }
         if (Viewport.Start > 0) Text(dc, "↑", 16, 39, 8, Muted);
         if (Viewport.Start + Viewport.VisibleCount < accounts.Count) Text(dc, "↓", 16, 190, 8, Muted);
-    }
-
-    private void DrawWater(DrawingContext dc)
-    {
-        var y = 278 - Math.Clamp(Level, 0, 100) / 100 * 236;
-        var water = new StreamGeometry();
-        using (var path = water.Open())
-        {
-            path.BeginFigure(new Point(0, y), true, true);
-            path.BezierTo(new Point(10, y - 3), new Point(20, y + 3), new Point(32, y), true, false);
-            path.LineTo(new Point(32, 281), true, false);
-            path.LineTo(new Point(0, 281), true, false);
-        }
-        dc.DrawGeometry(new LinearGradientBrush(ColorOf("#C5E9E8"), ColorOf("#69BCC6"), 90)
-            { Opacity = stale ? 0.28 : 0.72 }, null, water);
     }
 
     private static void Meter(DrawingContext dc, double? value, Brush color, double y)

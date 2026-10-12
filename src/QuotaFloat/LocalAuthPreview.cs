@@ -17,7 +17,7 @@ internal static class LocalAuthPreview
             settings.CpaSection.Visibility != Visibility.Collapsed || settings.TrafficSection.Visibility != Visibility.Collapsed ||
             settings.DemoCountOption.IsEnabled || settings.IntervalOption.Text != "5")
             throw new InvalidOperationException("本地认证设置可见性错误");
-        Save((FrameworkElement)settings.Content, output, "preview-local-settings.png", 570, 700);
+        Save((FrameworkElement)settings.Content, output, "preview-local-settings.png", 570, 1000);
         report.Add("通过：本地认证设置显示路径/选择文件，隐藏CPA设置，允许5秒");
         settings.SourceOption.SelectedIndex = 1;
         if (settings.LocalAuthSection.Visibility != Visibility.Collapsed || settings.CpaSection.Visibility != Visibility.Visible)

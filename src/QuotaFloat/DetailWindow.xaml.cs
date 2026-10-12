@@ -29,23 +29,21 @@ public partial class DetailWindow : Window
         PreviewKeyDown += OnKeyDown;
     }
 
-    /// <summary>刷新信息与错误提示，不覆盖分页位置。</summary>
+    /// <summary>刷新信息与错误提示，不覆盖分页位置。mode：0=5小时；1=7天；2=左5小时、右7天。</summary>
     public void Update(IReadOnlyList<AccountQuota> values, bool demo, bool topmost, bool pinned,
-        string? error, bool loading, DateTimeOffset? refreshed, bool local = false)
+        string? error, bool loading, DateTimeOffset? refreshed, bool local = false,
+        QuotaDisplayMode mode = QuotaDisplayMode.FiveHour)
     {
         accounts = values;
         now = DateTimeOffset.Now;
         page = Math.Clamp(page, 0, Math.Max(0, (values.Count - 1) / 10));
-        var level = QuotaMath.WaterLevel(values, now);
-        var valid = values.Count(a => a.Available(now) is not null);
-        WaterLabel.Text = level is { } percent ? $"{percent:0}" : "—";
-        CountLabel.Text = $"{values.Count} 个账号 · {valid} 个计入水位";
+        var valid = UpdateWaterSummary(values, mode);
         SourceLabel.Text = $"{(demo ? "演示数据 · 未连接 CPA" : local ? "本地Codex认证 · 直接查询" : "CPA 管理额度")}   /   " +
             (refreshed is { } time ? $"更新于 {time.LocalDateTime:HH:mm:ss}" : "尚未更新");
         Notice.Text = error is not null ? error + (values.Count > 0 ? "；下方为上次快照，不代表当前额度。" : "") :
             loading ? "正在读取额度，保留上一份数据…" :
             values.Count == 0 ? local ? "暂无本地账号额度；请检查ChatGPT登录及认证文件。" : "暂无 Codex 账号。演示账号数量可在设置中调整；CPA 模式请检查账号是否启用。" :
-            valid != values.Count ? $"{values.Count - valid} 个账号失败、缺少窗口或已到期，不计入总体水位。" :
+            valid != values.Count ? "部分账号失败、选定窗口缺失或到期；仅有效窗口计入对应水位。" :
             demo ? "当前为假数据。百分比参考示例，邮箱已匿名化；重置时间为相对演示时间。" :
             "只读取额度，不重置、不修改账号；7d 显示固定 7 天周期的已走过时间。";
         Notice.Foreground = (System.Windows.Media.Brush)FindResource(error is null ? "Muted" : "Danger");

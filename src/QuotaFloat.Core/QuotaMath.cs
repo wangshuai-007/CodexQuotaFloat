@@ -34,6 +34,22 @@ public static class QuotaMath
         return values.Length == 0 ? null : values.Average();
     }
 
+    /// <summary>单窗口有效账号的等权平均；只检查选定窗口到期，不受另一窗口影响。
+    /// mode：0=5小时；1=7天；2=左右双水位（须分别传0、1计算）。</summary>
+    public static double? WindowWaterLevel(IEnumerable<AccountQuota> accounts, DateTimeOffset now, QuotaDisplayMode mode)
+    {
+        if (mode is not (QuotaDisplayMode.FiveHour or QuotaDisplayMode.SevenDay))
+            throw new ArgumentOutOfRangeException(nameof(mode));
+        var values = accounts.Where(a => a.Error is null).Select(a =>
+        {
+            var reset = mode == QuotaDisplayMode.FiveHour ? a.FiveHourReset : a.WeeklyReset;
+            var remaining = mode == QuotaDisplayMode.FiveHour ? a.FiveHourRemaining : a.WeeklyRemaining;
+            return reset <= now || remaining is null || !double.IsFinite(remaining.Value)
+                ? (double?)null : Clamp(remaining.Value);
+        }).OfType<double>().ToArray();
+        return values.Length == 0 ? null : values.Average();
+    }
+
     /// <summary>分页后每页最多10账号；水位始终按全部账号计算。</summary>
     public static IReadOnlyList<AccountQuota> Page(IReadOnlyList<AccountQuota> accounts, int page) =>
         accounts.Skip(Math.Clamp(page, 0, Math.Max(0, (accounts.Count - 1) / 10)) * 10).Take(10).ToArray();

@@ -19,6 +19,14 @@ public partial class MainWindow
         Check(Width == 48 && Height == 296 && Gauge.Width == 32, "窄浮窗尺寸48×296，水柱宽32", checks);
         Check(Icon is not null && details.Icon is not null && peek.Icon is not null, "三个窗口使用应用图标", checks);
         Check(traffic.Snapshot.Tokens > 0 && traffic.Snapshot.Requests == 18, "演示最近60秒流量已显示", checks);
+        foreach (var mode in Enum.GetValues<QuotaFloat.Core.QuotaDisplayMode>())
+        {
+            settings.QuotaDisplay = mode;
+            settings.ReducedMotion = true;
+            UpdateViews();
+            Check(Gauge.DisplayMode == mode && Math.Abs(Gauge.Level - 280d / 3) < 0.001 && Gauge.WeeklyLevel == 69,
+                $"设置立即应用独立5h/7天水位：{mode}", checks);
+        }
         await CheckHoverAsync(checks);
         await CheckScrollAsync(checks);
         await CheckPanelsAsync(checks);

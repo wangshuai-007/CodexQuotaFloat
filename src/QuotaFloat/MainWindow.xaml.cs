@@ -141,9 +141,10 @@ public partial class MainWindow : Window
     {
         DisplayAccounts = AccountOrdering.Apply(session.Accounts, settings.AccountOrder);
         var label = session.Loading ? "读取中" : session.Error is not null ? "连接失败" : settings.UseDemo ? "演示" : settings.UseLocalAuth ? "本地" : "CPA";
+        Gauge.DisplayMode = settings.QuotaDisplay;
         Gauge.Update(DisplayAccounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
         details.Update(DisplayAccounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
-            session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo);
+            session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo, settings.QuotaDisplay);
         tray.Text = $"Codex 额度浮窗 · {label}";
         if (peek.IsVisible) UpdatePeek();
         PositionVisiblePanels();
@@ -228,6 +229,7 @@ public partial class MainWindow : Window
             refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
             session.Configure(settings, managementKey);
             traffic.Configure(settings, managementKey);
+            UpdateViews();
             _ = RefreshAll();
         }
         finally { settingsOpen = false; if (pinned) Expand(); }

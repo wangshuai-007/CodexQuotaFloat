@@ -12,6 +12,8 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; } = true;
     public bool DockToEdge { get; set; } = true;
     public bool ReducedMotion { get; set; }
+    /// <summary>水位显示：0=5小时额度；1=7天额度；2=左5小时、右7天。</summary>
+    public QuotaDisplayMode QuotaDisplay { get; set; } = QuotaDisplayMode.FiveHour;
     public int DemoCount { get; set; } = 3;
     public int RefreshSeconds { get; set; } = 60;
     public string TrafficSnapshotUrl { get; set; } = "";
@@ -37,6 +39,7 @@ public static class SettingsStore
                 ?? throw new JsonException();
             settings.DemoCount = Math.Clamp(settings.DemoCount, 0, 100);
             settings.RefreshSeconds = RefreshInterval.Clamp(settings.RefreshSeconds);
+            if (!Enum.IsDefined(settings.QuotaDisplay)) settings.QuotaDisplay = QuotaDisplayMode.FiveHour;
             settings.AccountOrder = (settings.AccountOrder ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
             if (settings.Left is { } x && !double.IsFinite(x)) settings.Left = null;
             if (settings.Top is { } y && !double.IsFinite(y)) settings.Top = null;

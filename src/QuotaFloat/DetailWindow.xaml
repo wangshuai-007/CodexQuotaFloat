@@ -25,13 +25,13 @@
    <Grid Grid.Row="1" Margin="0,22,0,18">
     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
     <StackPanel VerticalAlignment="Center">
-     <TextBlock Text="总体可用水位" FontWeight="SemiBold"/>
+     <TextBlock x:Name="WaterTitle" Text="5h 总体剩余水位" FontWeight="SemiBold"/>
      <TextBlock x:Name="CountLabel" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/>
      <TextBlock x:Name="TrafficLabel" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,5,0,0" TextWrapping="Wrap"/>
     </StackPanel>
     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
      <TextBlock x:Name="WaterLabel" Text="—" FontFamily="Bahnschrift" FontSize="38"/>
-     <TextBlock Text="%" FontSize="18" Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="3,0,0,6"/>
+     <TextBlock x:Name="WaterUnit" Text="%" FontSize="18" Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="3,0,0,6"/>
     </StackPanel>
    </Grid>
    <Border Grid.Row="2" x:Name="NoticeBox" Background="#EAF1ED" CornerRadius="10" Padding="12,9" Margin="0,0,0,12">
@@ -58,7 +58,7 @@
      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
      <StackPanel>
       <TextBlock Text="蓝 5h剩余 · 绿 周剩余 · 橙 7天已走过时间" FontSize="12" Foreground="{StaticResource Muted}"/>
-      <TextBlock Text="水位 = 各账号双窗口剩余较小值的平均，非 token 总量" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+      <TextBlock Text="水位 = 对应窗口有效账号的等权平均，非 Token 总量" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
      </StackPanel>
      <Button Grid.Column="1" x:Name="RefreshButton" Content="刷新" ToolTip="刷新额度 · F5" Click="RefreshClicked" Margin="12,0,0,0"/>
     </Grid>
