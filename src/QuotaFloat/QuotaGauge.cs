@@ -87,7 +87,6 @@ public sealed partial class QuotaGauge : FrameworkElement
         DrawWaterLabels(dc);
         Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 35, 8, Muted);
         DrawMeters(dc);
-        Text(dc, $"{accounts.Count}", 16, 200, 10, Ink, "Bahnschrift");
         DrawTraffic(dc);
         dc.DrawRoundedRectangle(Muted, null, new Rect(11, 270, 10, 2), 1, 1);
         dc.Pop();
