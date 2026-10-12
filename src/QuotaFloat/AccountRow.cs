@@ -52,6 +52,11 @@ public sealed class AccountRow : Border
 
     private static void AddMetrics(StackPanel stack, AccountQuota account, DateTimeOffset now)
     {
+        if (account.FiveHourRemaining is null && account.WeeklyRemaining is null && account.AdditionalWindows.Count > 0)
+        {
+            AddAdditionalMetrics(stack, account, now);
+            return;
+        }
         var metrics = new Grid { Margin = new Thickness(32, 10, 0, 0) };
         for (var i = 0; i < 3; i++) metrics.ColumnDefinitions.Add(new ColumnDefinition());
         AddMetric(metrics, 0, "5h 剩余", account.FiveHourRemaining, "Five", QuotaMath.Countdown(account.FiveHourReset, now));
@@ -59,10 +64,27 @@ public sealed class AccountRow : Border
         AddMetric(metrics, 2, "7d 已走过", QuotaMath.WeekElapsed(account.WeeklyReset, now), "Cycle",
             account.WeeklyReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "周期未知");
         stack.Children.Add(metrics);
+        if (account.AdditionalWindows.Count > 0) AddAdditionalMetrics(stack, account, now);
         if (account.Error is not null || account.IsExpired(now))
             stack.Children.Add(new TextBlock { Text = account.Error ?? "窗口已到期 · 刷新后更新水位",
                 Foreground = Resource("Danger"), FontSize = 13, TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(32, 8, 0, 0) });
+    }
+
+    private static void AddAdditionalMetrics(StackPanel stack, AccountQuota account, DateTimeOffset now)
+    {
+        var metrics = new Grid { Margin = new Thickness(32, 10, 0, 0) };
+        foreach (var _ in account.AdditionalWindows) metrics.ColumnDefinitions.Add(new ColumnDefinition());
+        for (var i = 0; i < account.AdditionalWindows.Count; i++)
+        {
+            var window = account.AdditionalWindows[i];
+            var time = window.Reset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm} · {QuotaMath.Countdown(reset, now)}" : "重置时间未知";
+            AddMetric(metrics, i, window.Label + " 剩余", window.Remaining, "Five", time);
+        }
+        stack.Children.Add(metrics);
+        if (account.FiveHourRemaining is null && account.WeeklyRemaining is null)
+            stack.Children.Add(new TextBlock { Text = "实际周期额度 · 不计入5h/7天水位", Foreground = Resource("Muted"),
+                FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(32, 8, 0, 0) });
     }
 
     private void WireActions(TextBlock plan, int index)

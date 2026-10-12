@@ -16,7 +16,7 @@ public sealed class LocalCodexQuotaSource(HttpClient client, string? authPath) :
         request.Headers.Add("ChatGPT-Account-Id", auth.AccountId);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.UserAgent.ParseAdd("CodexQuotaFloat/0.2");
-        using var response = await client.SendAsync(request, token);
+        using var response = await SendAsync(request, token);
         if (!response.IsSuccessStatusCode)
             throw new HttpRequestException("本地Codex额度查询失败", null, response.StatusCode);
         using var usage = await ReadUsageAsync(response.Content, token);
@@ -24,6 +24,13 @@ public sealed class LocalCodexQuotaSource(HttpClient client, string? authPath) :
             throw new FormatException("本地额度接口JSON结构不兼容；预期为额度对象");
         var account = CpaParser.Parse(usage.RootElement, "local:" + auth.AccountId, auth.Name, auth.Plan);
         return [account];
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+    {
+        try { return await client.SendAsync(request, token); }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        { throw new TimeoutException("连接官方额度接口超时；请检查网络代理或官方服务可达性后刷新"); }
     }
 
     private static async Task<JsonDocument> ReadUsageAsync(HttpContent content, CancellationToken token)
@@ -49,6 +56,7 @@ public sealed class LocalCodexQuotaSource(HttpClient client, string? authPath) :
         HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => "本地额度服务拒绝访问（403）；请检查登录、工作区权限或网络",
         HttpRequestException { StatusCode: { } code } => $"本地额度服务HTTP {(int)code}；请稍后刷新",
         HttpRequestException => "无法连接本地Codex额度服务；请检查网络或代理",
+        TimeoutException => error.Message,
         OperationCanceledException => "本地额度查询超时；可手动刷新",
         FormatException => error.Message.StartsWith("CPA", StringComparison.Ordinal) ? "本地额度响应格式不兼容" : error.Message,
         JsonException => "本地额度协议JSON无效；请更新Codex CLI或检查网络代理，不显示错误正文",

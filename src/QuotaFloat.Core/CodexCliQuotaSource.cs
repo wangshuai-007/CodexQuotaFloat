@@ -13,7 +13,8 @@ public sealed class CodexCliQuotaSource(string executable) : IQuotaSource, IDisp
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        timeout.CancelAfter(TimeSpan.FromSeconds(30));
+        var stage = "启动CLI";
         try
         {
             if (rpc is not null && DateTimeOffset.UtcNow - connectedAt > TimeSpan.FromMinutes(1)) ResetConnection();
@@ -23,12 +24,15 @@ public sealed class CodexCliQuotaSource(string executable) : IQuotaSource, IDisp
                 await rpc.InitializeAsync(timeout.Token);
                 connectedAt = DateTimeOffset.UtcNow;
             }
-            return await ReadAccountAsync(rpc, timeout.Token);
+            stage = "读取账号";
+            return await ReadAccountAsync(rpc, timeout.Token, value => stage = value);
         }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        { ResetConnection(); throw new TimeoutException($"本地查询超时（{stage}，30秒）；请检查Codex网络/代理后刷新"); }
         catch { ResetConnection(); throw; }
     }
 
-    private static async Task<IReadOnlyList<AccountQuota>> ReadAccountAsync(CodexRpc connection, CancellationToken token)
+    private static async Task<IReadOnlyList<AccountQuota>> ReadAccountAsync(CodexRpc connection, CancellationToken token, Action<string> stage)
     {
         using var identity = await connection.RequestAsync("account/read", new { refreshToken = false }, token);
         var root = identity.RootElement;
@@ -37,6 +41,7 @@ public sealed class CodexCliQuotaSource(string executable) : IQuotaSource, IDisp
             throw new FormatException("Codex CLI未使用ChatGPT认证；可能与桌面登录不同。请选ChatGPT的auth.json，API Key无法查订阅额度");
         var name = CpaParser.Text(account, "email") ?? "本地Codex账号";
         var plan = CpaParser.Text(account, "planType") ?? "Codex";
+        stage("读取额度");
         using var limits = await connection.RequestAsync("account/rateLimits/read", new { }, token);
         return [Parse(limits.RootElement, name, plan)];
     }

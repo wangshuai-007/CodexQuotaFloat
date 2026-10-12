@@ -100,6 +100,10 @@ internal static class LocalAuthTests
         using var bomHttp = new HttpClient(new LocalHandler(_ => new(HttpStatusCode.OK) {
             Content = new StringContent("\ufeff{}", Encoding.UTF8, "application/json") }));
         Check("额度JSON兼容UTF8 BOM", (await new LocalCodexQuotaSource(bomHttp, path).ReadAsync(default)).Count == 1);
+        using var timeoutHttp = new HttpClient(new LocalHandler(_ => throw new TaskCanceledException("private-timeout-body")));
+        try { await new LocalCodexQuotaSource(timeoutHttp, path).ReadAsync(default); Check("HTTP超时独立定位", false); }
+        catch (TimeoutException error)
+        { Check("HTTP超时说明官方额度连接阶段且无正文", error.Message.StartsWith("连接官方额度接口超时") && !error.Message.Contains("private-timeout-body")); }
     }
 
     private static string AuthJson(string? account = "fixture-account", string access = FakeToken, string? id = null) =>

@@ -124,6 +124,7 @@ passed += ManagementKeyTests.Run();
 passed += await TrafficOrderingTests.RunAsync();
 passed += await LocalAuthTests.RunAsync();
 passed += await CodexCliTests.RunAsync();
+passed += AdditionalWindowTests.Run();
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

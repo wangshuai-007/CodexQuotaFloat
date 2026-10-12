@@ -30,6 +30,30 @@ internal static class LocalAuthPreview
         Save((FrameworkElement)details.Content, output, "preview-local-error.png", 600, 600);
         details.Close();
         report.Add("通过：本地认证失败来源和流量不可用状态明确，不显示假额度");
+        MonthlyPreview(output, report);
+    }
+
+    private static void MonthlyPreview(string output, List<string> report)
+    {
+        var account = new AccountQuota("fixture-monthly", "monthly@demo.local", "Free", null, null, null, null,
+            "服务返回其他周期额度 · 不计入5h/7天水位") { AdditionalWindows = [new(2592000, 100, DateTimeOffset.Now.AddDays(30))] };
+        var row = new AccountRow(account, 1, DateTimeOffset.Now);
+        Save(row, output, "preview-monthly-row.png", 580, 220);
+        var peek = new AccountPeekWindow();
+        peek.Update(account, 0, 1, false, null, false, true);
+        Save((FrameworkElement)peek.Content, output, "preview-monthly-hover.png", 304, 220);
+        var texts = Texts((DependencyObject)peek.Content).ToArray();
+        if (!texts.Contains("月剩余") || !texts.Contains("100%") || texts.Contains("周剩余"))
+            throw new InvalidOperationException("月额度悬停未展示实际周期或错误显示周额度");
+        peek.Close();
+        report.Add("通过：月额度列表/悬停显示100%及重置时刻，不冒充5h/周额度");
+    }
+
+    private static IEnumerable<string> Texts(DependencyObject element)
+    {
+        if (element is TextBlock text) yield return text.Text;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+            foreach (var value in Texts(VisualTreeHelper.GetChild(element, i))) yield return value;
     }
 
     private static void Save(FrameworkElement panel, string output, string name, double width, double height)

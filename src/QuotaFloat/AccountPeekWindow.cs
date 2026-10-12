@@ -46,17 +46,27 @@ public sealed partial class AccountPeekWindow : Window
         body.Children.Add(new TextBlock { Text = $"{account?.Plan ?? "Codex"} · {(demo ? "演示" : local ? "本地Codex" : "CPA")} · {Math.Max(0, index + 1)}/{total}",
             FontSize = 11, Foreground = Resource("Muted"), Margin = new Thickness(0, 3, 0, 9) });
         if (account is not null)
+            AccountMetrics(account);
+        var warning = error ?? account?.Error ?? (account?.IsExpired(DateTimeOffset.Now) == true ? "窗口到期 · 待刷新" : null);
+        body.Children.Add(new TextBlock { Text = warning ?? (loading ? "正在读取额度…" : "上下移动 / 滚轮切换 · 点击浮窗查看全部"),
+            FontSize = 11, Foreground = Resource(warning is null || error is null &&
+                warning.StartsWith("服务返回其他周期额度", StringComparison.Ordinal) ? "Muted" : "Danger"),
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) });
+    }
+
+    private void AccountMetrics(AccountQuota account)
+    {
+        var now = DateTimeOffset.Now;
+        if (account.FiveHourRemaining is not null || account.WeeklyRemaining is not null || account.AdditionalWindows.Count == 0)
         {
-            var now = DateTimeOffset.Now;
             Metric("5h 剩余", account.FiveHourRemaining, "Five", QuotaMath.Countdown(account.FiveHourReset, now));
             Metric("周剩余", account.WeeklyRemaining, "Week", QuotaMath.Countdown(account.WeeklyReset, now));
             Metric("7d 已走过", QuotaMath.WeekElapsed(account.WeeklyReset, now), "Cycle",
                 account.WeeklyReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "周期未知");
         }
-        var warning = error ?? account?.Error ?? (account?.IsExpired(DateTimeOffset.Now) == true ? "窗口到期 · 待刷新" : null);
-        body.Children.Add(new TextBlock { Text = warning ?? (loading ? "正在读取额度…" : "上下移动 / 滚轮切换 · 点击浮窗查看全部"),
-            FontSize = 11, Foreground = Resource(warning is null ? "Muted" : "Danger"),
-            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) });
+        foreach (var window in account.AdditionalWindows)
+            Metric(window.Seconds == 2592000 ? "月剩余" : window.Label, window.Remaining, "Five", window.Reset is { } reset ?
+                $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "重置时间未知");
     }
 
     private void Metric(string label, double? value, string color, string time)

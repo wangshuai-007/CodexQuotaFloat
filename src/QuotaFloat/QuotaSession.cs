@@ -9,6 +9,8 @@ public sealed class QuotaSession : IDisposable
 {
     private readonly HttpClient http = new(new HttpClientHandler { AllowAutoRedirect = false })
         { Timeout = TimeSpan.FromSeconds(12), MaxResponseContentBufferSize = 2 * 1024 * 1024 };
+    private readonly HttpClient localHttp = new(new HttpClientHandler { AllowAutoRedirect = false })
+        { Timeout = TimeSpan.FromSeconds(30), MaxResponseContentBufferSize = 2 * 1024 * 1024 };
     private CancellationTokenSource requestCancellation = new();
     private int version;
     private AppSettings settings;
@@ -65,7 +67,7 @@ public sealed class QuotaSession : IDisposable
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
         catch (Exception error) when (error is HttpRequestException or System.Text.Json.JsonException or
-            FormatException or ArgumentException or OperationCanceledException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or ObjectDisposedException)
+            FormatException or ArgumentException or OperationCanceledException or TimeoutException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or ObjectDisposedException)
         {
             if (current != version) return;
             Error = settings.UseLocalAuth && !settings.UseDemo ? LocalCodexQuotaSource.SafeError(error) : CpaQuotaSource.SafeError(error);
@@ -85,13 +87,14 @@ public sealed class QuotaSession : IDisposable
         requestCancellation.Cancel();
         requestCancellation.Dispose();
         http.Dispose();
+        localHttp.Dispose();
         (source as IDisposable)?.Dispose();
     }
 
     private IQuotaSource LocalSource()
     {
         var cli = string.IsNullOrWhiteSpace(settings.LocalAuthPath) ? LocalCodexCli.Find() : null;
-        return cli is null ? new LocalCodexQuotaSource(http, settings.LocalAuthPath) : new CodexCliQuotaSource(cli);
+        return cli is null ? new LocalCodexQuotaSource(localHttp, settings.LocalAuthPath) : new CodexCliQuotaSource(cli);
     }
 
     /// <summary>手动刷新重新连接本地CLI，及时读取其它程序更新的登录状态。</summary>

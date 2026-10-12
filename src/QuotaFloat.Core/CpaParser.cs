@@ -20,9 +20,15 @@ public static class CpaParser
         var week = Find(windows, 604800, "secondary_window");
         var fiveRemaining = Remaining(five);
         var weekRemaining = Remaining(week);
+        var additional = windows.Where(item => Number(item.Value, "limit_window_seconds") is { } seconds &&
+            seconds > 0 && seconds != 18000 && seconds != 604800)
+            .Select(item => new AdditionalQuotaWindow(Number(item.Value, "limit_window_seconds")!.Value,
+                Remaining(item.Value), Reset(item.Value))).ToArray();
         return new AccountQuota(id, name, Text(usage, "plan_type") ?? plan,
             fiveRemaining, weekRemaining, Reset(five), Reset(week),
-            fiveRemaining is null || weekRemaining is null ? "额度窗口缺失 · 不计入水位" : null);
+            fiveRemaining is null || weekRemaining is null ? additional.Length > 0 ?
+                "服务返回其他周期额度 · 不计入5h/7天水位" : "额度窗口缺失 · 不计入水位" : null)
+            { AdditionalWindows = additional };
     }
 
     private static JsonElement? Find(List<(JsonElement Value, string Key)> windows, int seconds, string fallback)
