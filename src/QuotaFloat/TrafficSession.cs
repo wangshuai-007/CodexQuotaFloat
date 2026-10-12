@@ -15,6 +15,7 @@ internal sealed class TrafficSession : IDisposable
     private int version;
     private bool loading;
     private bool paused;
+    private KeeperTrafficSource? keeper;
     internal TrafficSnapshot Snapshot { get; private set; } = TrafficSnapshot.Unknown();
     internal event Action? Changed;
 
@@ -31,6 +32,7 @@ internal sealed class TrafficSession : IDisposable
         cancellation.Cancel();
         cancellation.Dispose();
         cancellation = new();
+        keeper?.Dispose(); keeper = null;
         settings = options;
         key = managementKey;
         loading = false;
@@ -50,6 +52,16 @@ internal sealed class TrafficSession : IDisposable
         {
             var now = DateTimeOffset.Now;
             if (settings.UseDemo) Snapshot = Demo(now);
+            else if (settings.UseKeeper)
+            {
+                keeper ??= new(settings.KeeperUrl, string.IsNullOrEmpty(settings.KeeperPassword) ?
+                    KeeperPasswordEnvironment.Read() : settings.KeeperPassword, settings.AllowKeeperLanHttp);
+                using var data = await keeper.ReadAsync(token);
+                if (current != version) return;
+                now = DateTimeOffset.Now;
+                accumulator.Ingest(data.RootElement, now);
+                Snapshot = accumulator.Snapshot(now) with { SourceLabel = "Keeper · CPA全局" };
+            }
             else if (settings.UseLocalAuth) Snapshot = TrafficSnapshot.Unknown("本地认证仅查询额度，不提供最近60秒Token/请求统计");
             else
             {
@@ -68,7 +80,9 @@ internal sealed class TrafficSession : IDisposable
             if (current != version) return;
             paused = error is ArgumentException || error is HttpRequestException
                 { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound };
-            var message = error is ArgumentException ? error.Message : CpaQuotaSource.SafeError(error);
+            if (settings.UseKeeper && (error is FormatException or System.Text.Json.JsonException or InvalidOperationException ||
+                error is HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.TooManyRequests })) paused = true;
+            var message = settings.UseKeeper ? KeeperTrafficSource.SafeError(error) : CpaQuotaSource.SafeError(error);
             Snapshot = TrafficSnapshot.Unknown(message);
         }
         finally
@@ -86,5 +100,5 @@ internal sealed class TrafficSession : IDisposable
             { TokensPerSecond = values[phase], RequestsPerSecond = phase % 3, SampleSeconds = 1 };
     }
 
-    public void Dispose() { version++; cancellation.Cancel(); cancellation.Dispose(); http.Dispose(); }
+    public void Dispose() { version++; cancellation.Cancel(); cancellation.Dispose(); keeper?.Dispose(); http.Dispose(); }
 }

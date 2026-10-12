@@ -116,7 +116,7 @@ public partial class DetailWindow : Window
     public void SetTraffic(TrafficSnapshot value, bool demo)
     {
         TrafficLabel.Text = value.Tokens is null ? "流量未接入 · " + (value.Error ?? "等待只读统计快照") :
-            $"{(demo ? "演示流量" : "CPA全局")} · Token/s {value.TokenRateLabel}\n" +
+            $"{(demo ? "演示流量" : value.SourceLabel)} · Token/s {value.TokenRateLabel}\n" +
             $"最近60秒 {value.TokenLabel} Token" +
             (value.TokensPerSecond is null ? " · " + (value.Error ?? "首次采样，等待下一秒") : "");
         TrafficLabel.ToolTip = value.UpdatedAt is { } time ? $"截至 {time.LocalDateTime:HH:mm:ss}；每秒独立取快照，仅新增已完成请求；实际采样 {value.SampleSeconds:0.##}秒。趋势每5秒一格。" : value.Error;

@@ -26,6 +26,10 @@ public partial class SettingsWindow : Window
         KeyOption.Password = ManagementKey;
         IntervalOption.Text = current.RefreshSeconds.ToString();
         TrafficUrlOption.Text = current.TrafficSnapshotUrl;
+        KeeperUrlOption.Text = current.KeeperUrl;
+        KeeperPasswordOption.Password = string.IsNullOrEmpty(current.KeeperPassword) ? KeeperPasswordEnvironment.Read() : current.KeeperPassword;
+        KeeperHttpOption.IsChecked = current.AllowKeeperLanHttp;
+        KeeperOption.IsChecked = current.UseKeeper;
         LocalAuthOption.Text = current.LocalAuthPath;
         try { DefaultAuthLabel.Text = "自动：已安装的Codex CLI；无CLI时读取 " + LocalCodexAuth.ResolvePath(null); }
         catch (ArgumentException) { DefaultAuthLabel.Text = "默认CODEX_HOME路径无效，请手动选择认证文件。"; }
@@ -41,11 +45,22 @@ public partial class SettingsWindow : Window
         LocalAuthSection.Visibility = local ? Visibility.Visible : Visibility.Collapsed;
         DemoSection.Visibility = SourceOption.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
         CpaSection.Visibility = local ? Visibility.Collapsed : Visibility.Visible;
-        TrafficSection.Visibility = local ? Visibility.Collapsed : Visibility.Visible;
+        TrafficSection.Visibility = SourceOption.SelectedIndex == 0 ? Visibility.Collapsed : Visibility.Visible;
         UrlOption.IsEnabled = real;
         KeyOption.IsEnabled = real;
         TrafficUrlOption.IsEnabled = real;
         DemoCountOption.IsEnabled = SourceOption.SelectedIndex == 0;
+        UpdateTrafficOptions();
+    }
+
+    private void KeeperChanged(object sender, RoutedEventArgs e) => UpdateTrafficOptions();
+
+    private void UpdateTrafficOptions()
+    {
+        if (KeeperSection is null || SnapshotSection is null || SourceOption is null) return;
+        var keeper = KeeperOption.IsChecked == true;
+        KeeperSection.Visibility = keeper ? Visibility.Visible : Visibility.Collapsed;
+        SnapshotSection.Visibility = !keeper && SourceOption.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BrowseAuthClicked(object sender, RoutedEventArgs e)
@@ -64,6 +79,12 @@ public partial class SettingsWindow : Window
         { ValidationError.Text = "刷新间隔须为 5–3600 秒的整数。"; IntervalOption.Focus(); return; }
         var demo = SourceOption.SelectedIndex == 0;
         var local = SourceOption.SelectedIndex == 2;
+        var keeper = KeeperOption.IsChecked == true;
+        if (!demo && keeper)
+        {
+            try { KeeperUrl.Validate(KeeperUrlOption.Text, KeeperHttpOption.IsChecked == true); }
+            catch (ArgumentException error) { ValidationError.Text = error.Message; KeeperUrlOption.Focus(); return; }
+        }
         if (local)
         {
             try { LocalCodexAuth.ResolvePath(LocalAuthOption.Text); }
@@ -71,15 +92,7 @@ public partial class SettingsWindow : Window
         }
         if (!demo && !local)
         {
-            try { CpaQuotaSource.ValidateUrl(UrlOption.Text); }
-            catch (ArgumentException error) { ValidationError.Text = error.Message; UrlOption.Focus(); return; }
-            if (!string.IsNullOrWhiteSpace(TrafficUrlOption.Text))
-            {
-                try { CpaTrafficSource.ResolveUrl(UrlOption.Text, TrafficUrlOption.Text); }
-                catch (ArgumentException error) { ValidationError.Text = error.Message; TrafficUrlOption.Focus(); return; }
-            }
-            if (string.IsNullOrWhiteSpace(KeyOption.Password))
-            { ValidationError.Text = "请输入 CPA 管理密钥，或取消并设置环境变量后重新启动。"; KeyOption.Focus(); return; }
+            if (!ValidateCpa(keeper)) return;
         }
         var next = new AppSettings
         {
@@ -89,6 +102,8 @@ public partial class SettingsWindow : Window
             QuotaDisplay = (QuotaDisplayMode)Math.Clamp(QuotaDisplayOption.SelectedIndex, 0, 2),
             DemoCount = count, RefreshSeconds = interval, ManagementUrl = UrlOption.Text.Trim().TrimEnd('/'),
             TrafficSnapshotUrl = TrafficUrlOption.Text.Trim(), AccountOrder = Result.AccountOrder.ToList(),
+            UseKeeper = keeper, KeeperUrl = KeeperUrlOption.Text.Trim(), KeeperPassword = KeeperPasswordOption.Password,
+            AllowKeeperLanHttp = KeeperHttpOption.IsChecked == true,
             Left = Result.Left, Top = Result.Top
         };
         try { SettingsStore.Save(next); }
@@ -97,5 +112,19 @@ public partial class SettingsWindow : Window
         Result = next;
         ManagementKey = KeyOption.Password;
         DialogResult = true;
+    }
+
+    private bool ValidateCpa(bool keeper)
+    {
+        try { CpaQuotaSource.ValidateUrl(UrlOption.Text); }
+        catch (ArgumentException error) { ValidationError.Text = error.Message; UrlOption.Focus(); return false; }
+        if (!keeper && !string.IsNullOrWhiteSpace(TrafficUrlOption.Text))
+        {
+            try { CpaTrafficSource.ResolveUrl(UrlOption.Text, TrafficUrlOption.Text); }
+            catch (ArgumentException error) { ValidationError.Text = error.Message; TrafficUrlOption.Focus(); return false; }
+        }
+        if (!string.IsNullOrWhiteSpace(KeyOption.Password)) return true;
+        ValidationError.Text = "请输入 CPA 管理密钥，或取消并设置环境变量后重新启动。";
+        KeyOption.Focus(); return false;
     }
 }

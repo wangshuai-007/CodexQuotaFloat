@@ -43,9 +43,20 @@
   <TextBlock Text="额度同步间隔（5–3600秒；流量固定每秒独立取数）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="IntervalOption"/>
   <StackPanel x:Name="TrafficSection">
+  <CheckBox x:Name="KeeperOption" Content="使用 CPA Usage Keeper 查询Token统计" Margin="0,16,0,0" Checked="KeeperChanged" Unchecked="KeeperChanged"/>
+  <StackPanel x:Name="KeeperSection" Visibility="Collapsed">
+   <TextBlock Text="Keeper应用根地址（不是CPA管理地址）" Margin="0,12,0,6" FontSize="14"/>
+   <TextBox x:Name="KeeperUrlOption" ToolTip="例如 http://192.168.50.226:8123/；也支持HTTPS及部署子路径"/>
+   <TextBlock Text="Keeper登录密码（仅本次会话）" Margin="0,12,0,6" FontSize="14"/>
+   <PasswordBox x:Name="KeeperPasswordOption"/>
+   <CheckBox x:Name="KeeperHttpOption" Content="允许局域网HTTP（密码与会话明文传输）" Margin="0,10,0,0"/>
+   <TextBlock Text="密码也可由KEEPER_LOGIN_PASSWORD提供，不复用CPA密钥。登录后每秒只读查询Keeper请求明细；未登录/会话失效暂停，修正后保存或F5重试。统计已完成请求，不是正在生成的速度。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0"/>
+  </StackPanel>
+  <StackPanel x:Name="SnapshotSection">
   <TextBlock Text="只读流量快照地址（可选，同CPA域名及端口）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="TrafficUrlOption"/>
   <TextBlock Text="每秒GET只读快照，Token/s为新增已完成请求用量÷实际采样间隔，非生成速度；同时保留60秒累计。首帧建立基线，慢请求不重叠。旧版可留空读取 /usage；CPA v8需提供只读统计服务。不消费usage队列，服务自身缓存会影响实时性。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0"/>
+  </StackPanel>
   </StackPanel>
   <TextBlock x:Name="ValidationError" Foreground="{StaticResource Danger}" TextWrapping="Wrap" FontSize="14" Margin="0,12,0,0"/>
   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">

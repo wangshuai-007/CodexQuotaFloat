@@ -4,6 +4,8 @@ namespace QuotaFloat.Core;
 public sealed record TrafficSnapshot(long? Tokens, int? Requests, IReadOnlyList<long> Buckets,
     DateTimeOffset? UpdatedAt, string? Error = null)
 {
+    /// <summary>统计来源，仅使用本地固定标签，不取服务端可变文本。</summary>
+    public string SourceLabel { get; init; } = "CPA全局";
     /// <summary>两次成功快照间新增Token除以实际秒数；首次采样或不可用时为未知。</summary>
     public double? TokensPerSecond { get; init; }
     /// <summary>两次成功快照间新增请求除以实际秒数；不是进行中请求数。</summary>

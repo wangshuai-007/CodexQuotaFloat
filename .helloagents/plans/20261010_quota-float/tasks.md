@@ -23,6 +23,8 @@
 
 - [√] 任务12（AFK）：应用每次Build成功自动复制完整输出至release，支持Debug/Release和增量构建，忽略设计器及测试诊断文件；验证：两配置及增量构建7个文件SHA256一致，release exe回归。
 
+- [√] 任务13（AFK）：Keeper独立认证、只读事件游标分页、每秒Token统计、设置与局域网HTTP安全确认；验证：44项新增离线检查、4项新增设置渲染检查；真实入口200/未认证用量401，真实用量须用户本地输入Keeper密码。
+
 ## Codex /goal 执行入口
 按 C:/Codes/CodexQuotaFloat/.helloagents/plans/20261010_quota-float/tasks.md 执行，遵守 requirements.md、plan.md、contract.json；/goal -> ~auto -> ~qa。真实 CPA 凭据仅在用户主动切换数据源时输入，当前演示交付不依赖该输入。
 

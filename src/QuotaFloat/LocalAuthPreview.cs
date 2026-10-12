@@ -14,7 +14,7 @@ internal static class LocalAuthPreview
         var settings = new SettingsWindow(new AppSettings { UseDemo = false, UseLocalAuth = true, RefreshSeconds = 5 }, "fixture-key");
         settings.DefaultAuthLabel.Text = "自动：已安装的Codex CLI；无CLI时读取示例 C:\\Users\\demo\\.codex\\auth.json";
         if (settings.SourceOption.SelectedIndex != 2 || settings.LocalAuthSection.Visibility != Visibility.Visible ||
-            settings.CpaSection.Visibility != Visibility.Collapsed || settings.TrafficSection.Visibility != Visibility.Collapsed ||
+            settings.CpaSection.Visibility != Visibility.Collapsed || settings.SnapshotSection.Visibility != Visibility.Collapsed ||
             settings.DemoCountOption.IsEnabled || settings.IntervalOption.Text != "5")
             throw new InvalidOperationException("本地认证设置可见性错误");
         Save((FrameworkElement)settings.Content, output, "preview-local-settings.png", 570, 1000);

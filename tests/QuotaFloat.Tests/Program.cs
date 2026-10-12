@@ -119,6 +119,7 @@ passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
 passed += WaterDisplayTests.Run();
 passed += TrafficRateTests.Run();
+passed += await KeeperTests.RunAsync();
 passed += ManagementKeyTests.Run();
 passed += await TrafficOrderingTests.RunAsync();
 passed += await LocalAuthTests.RunAsync();

@@ -5,6 +5,7 @@
   "originCommand": "plan",
   "qaMode": "standard",
   "qaFocus": [
+    "Keeper独立Cookie认证/游标分页/只读查询/密码不落盘/局域网HTTP显式允许",
     "5h/7天/左右双水位设置与独立窗口计算、7天周期",
     "上下移动单账号与滚轮视口",
     "点击全部列表",

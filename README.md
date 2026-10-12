@@ -70,6 +70,22 @@ Windows 10/11 原生 WPF 额度仪表，首版默认使用假数据，不自动�
 
 ## 只读实时流量
 
+### CPA Usage Keeper
+
+设置中勾选“使用 CPA Usage Keeper 查询Token统计”，填写**Keeper应用根地址**（不是CPA管理地址，也不是插件菜单地址）和Keeper自己的登录密码。支持部署子路径，例如`https://stats.example.com/keeper/`。不要将根地址填入旧的“只读流量快照地址”。
+
+- Keeper与额度来源独立，可搭配CPA额度或本地Codex额度；演示模式不访问Keeper。
+- 密码仅会话内存保存，不写入settings.json，也可由`KEEPER_LOGIN_PASSWORD`提供（进程→Windows用户→系统）；不会复用或转发`CPA_MANAGEMENT_KEY`。重启后需重新输入密码或提供环境变量。
+- 默认HTTPS；本机回环可HTTP。私有IP局域网HTTP须明确勾选“允许局域网HTTP”，密码和Cookie会明文传输，仅在可信网络使用。公网HTTP、地址内嵌密码/查询参数/片段、HTTP重定向均拒绝，不跳过证书验证。
+- 首次查询读取`GET /api/v1/auth/session`；需要认证时仅执行`POST /api/v1/auth/login`建立独立Cookie会话，后续只读`GET /api/v1/usage/events?range=1h&page_size=100&cursor_mode=true`。不查询请求正文、下载日志，不操作CPA/Keeper配置或队列。
+- 用Keeper稳定事件ID去重，映射`timestamp`和`tokens.total_tokens`，保持每秒独立取数、60秒Token累计和趋势。Token/s是新增已完成记录用量除以真实采样间隔，不是流式输出速度，暂未使用Keeper的`speed_tps`字段。
+- 游标分页最多200页、返回总量4MiB、整轮4秒；不完整分页/失败/超限不使用部分数据冒充完整统计。401/403/404暂停自动查询，修正设置或F5后重试，不持续尝试错误密码。Keeper自身采集延迟、请求时间口径及两端时间偏差会影响实时性。
+- 联调边界：已确认用户部署的登录状态接口可达且需要登录，用量接口未登录返回401；没有获取用户密码，真实认证后的Token数据尚未验证。离线Cookie、子路径、分页、去重、错误及安全检查已通过。
+
+依据：[Keeper官方认证实现](https://github.com/Willxup/cpa-usage-keeper/blob/main/internal/api/auth.go)、[只读事件接口](https://github.com/Willxup/cpa-usage-keeper/blob/main/internal/api/usage_events.go)。本工具不控制Keeper采集方式，部署者仍需确认它不回退消费CPA队列。
+
+### 原有CPA只读快照
+
 严格不访问`/usage-queue`或`/observability/usage/queue`：这类接口读取后移除记录。v8未配置只读地址时直接显示“流量未接入”；当前官方v8无内置最近Token只读快照，不能仅凭管理密钥启用该功能。
 
 提供旧版`GET /usage`的分支可留空；已移除此接口的版本返回404后暂停流量自动刷新，并显示失败，不回退队列。新版需要已有统计服务的**同源只读快照地址**（可通过CPA所在服务的反向代理提供）。地址不得包含密钥参数，不能跨源转发管理密钥；拒绝队列/重置/配置/凭据路径，不跟随重定向。不会自动创建统计服务或改CPA配置。

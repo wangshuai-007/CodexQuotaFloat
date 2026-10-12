@@ -17,6 +17,11 @@ public sealed class AppSettings
     public int DemoCount { get; set; } = 3;
     public int RefreshSeconds { get; set; } = 60;
     public string TrafficSnapshotUrl { get; set; } = "";
+    public bool UseKeeper { get; set; }
+    public string KeeperUrl { get; set; } = "";
+    public bool AllowKeeperLanHttp { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string KeeperPassword { get; set; } = "";
     public List<string> AccountOrder { get; set; } = [];
     public string ManagementUrl { get; set; } = "http://127.0.0.1:8317/v8/management";
     public double? Left { get; set; }
