@@ -24,6 +24,7 @@ public partial class MainWindow
             await CheckAttachmentLayersAsync(client, handle, checks);
             await CheckRelativeAttachmentAsync(client, handle, checks);
             await CheckAttachedPeekLayerAsync(checks);
+            await CheckInactiveClientDetailsAsync(client, handle, checks);
             pinned = true; Expand();
             client.WindowState = WindowState.Minimized;
             await Task.Delay(650);

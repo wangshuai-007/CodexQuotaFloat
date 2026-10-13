@@ -7,7 +7,8 @@ namespace QuotaFloat;
 /// <summary>只调整本工具位置和窗口层级；不用跨进程Owner，避免客户端退出销毁浮窗。</summary>
 internal static class ClientAttachment
 {
-    internal static bool Place(Window floating, IntPtr client, IEnumerable<IntPtr> ownWindows, Point? offset = null)
+    internal static bool Place(Window floating, IntPtr client, IEnumerable<IntPtr> ownWindows, Point? offset = null,
+        bool interacting = false)
     {
         if (!GetWindowRect(client, out var bounds)) return false;
         var scale = Math.Max(96u, GetDpiForWindow(client)) / 96d;
@@ -17,6 +18,8 @@ internal static class ClientAttachment
                 bounds.Top + Math.Min(80 * scale, Math.Max(0, bounds.Bottom - bounds.Top - floating.Height * scale)));
         NativePlacement.Move(floating, position);
         var own = ownWindows.ToHashSet();
+        // 重排Owner会连带降低详情窗口；交互期间仅跟随位置，离开本工具后恢复附着层级。
+        if (interacting || own.Contains(GetForegroundWindow())) return true;
         var preceding = GetWindow(client, 3);
         while (preceding != IntPtr.Zero && own.Contains(preceding)) preceding = GetWindow(preceding, 3);
         if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = new IntPtr(-2);
