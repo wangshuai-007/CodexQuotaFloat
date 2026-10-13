@@ -18,6 +18,10 @@ internal static class KeeperPreview
             window.KeeperUrlOption.Text != options.KeeperUrl || window.KeeperPasswordOption.Password != "fixture-only")
             throw new InvalidOperationException("Keeper设置显示错误");
         report.Add("通过：Keeper独立地址/密码/HTTP确认显示，旧快照字段隐藏");
+        if (window.KeeperProjectLink.NavigateUri?.AbsoluteUri != "https://github.com/Willxup/cpa-usage-keeper" ||
+            !window.KeeperProjectLink.Focusable)
+            throw new InvalidOperationException("Keeper项目链接地址或键盘可达性错误");
+        report.Add("通过：CPA Usage Keeper文字链接指向官方项目且键盘可达");
         var serialized = JsonSerializer.Serialize(options);
         if (serialized.Contains("fixture-only") || serialized.Contains("KeeperPassword"))
             throw new InvalidOperationException("Keeper密码写入了设置JSON");

@@ -45,7 +45,9 @@
   <TextBlock Text="额度同步间隔（5–3600秒；流量固定每秒独立取数）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="IntervalOption"/>
   <StackPanel x:Name="TrafficSection">
-  <CheckBox x:Name="KeeperOption" Content="使用 CPA Usage Keeper 查询Token统计" Margin="0,16,0,0" Checked="KeeperChanged" Unchecked="KeeperChanged"/>
+  <CheckBox x:Name="KeeperOption" Margin="0,16,0,0" Checked="KeeperChanged" Unchecked="KeeperChanged">
+   <TextBlock><Run Text="使用 "/><Hyperlink x:Name="KeeperProjectLink" NavigateUri="https://github.com/Willxup/cpa-usage-keeper" RequestNavigate="KeeperProjectNavigate" Foreground="{StaticResource Five}" ToolTip="打开 CPA Usage Keeper 的 GitHub 项目页">CPA Usage Keeper</Hyperlink><Run Text=" 查询Token统计"/></TextBlock>
+  </CheckBox>
   <StackPanel x:Name="KeeperSection" Visibility="Collapsed">
    <TextBlock Text="Keeper应用根地址（不是CPA管理地址）" Margin="0,12,0,6" FontSize="14"/>
    <TextBox x:Name="KeeperUrlOption" ToolTip="例如 https://stats.example.com/；也支持HTTPS及部署子路径"/>

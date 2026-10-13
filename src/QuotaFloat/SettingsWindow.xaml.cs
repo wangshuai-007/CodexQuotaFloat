@@ -7,6 +7,18 @@ namespace QuotaFloat;
 /// <summary>本地设置；真实管理密钥仅保留在会话内存。</summary>
 public partial class SettingsWindow : Window
 {
+    private void KeeperProjectNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/Willxup/cpa-usage-keeper")
+                { UseShellExecute = true });
+        }
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
+        { ValidationError.Text = "无法打开默认浏览器，请访问 https://github.com/Willxup/cpa-usage-keeper"; }
+    }
+
     public AppSettings Result { get; private set; }
     public string ManagementKey { get; private set; }
 
