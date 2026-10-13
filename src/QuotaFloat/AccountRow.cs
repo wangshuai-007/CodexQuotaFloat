@@ -110,13 +110,26 @@ public sealed class AccountRow : Border
 
     private void BuildActions(int index)
     {
-        foreach (var (label, destination) in new[] { ("置顶", 0), ("最后", int.MaxValue) })
+        foreach (var (label, destination, geometry) in new[] {
+            ("置顶", 0, "M 2,2 H 14 M 8,14 V 5 M 4,9 L 8,5 L 12,9"),
+            ("最后", int.MaxValue, "M 2,14 H 14 M 8,2 V 11 M 4,7 L 8,11 L 12,7") })
         {
-            var button = new Button { Content = label, FontSize = 12, MinWidth = 38,
-                Padding = new Thickness(5, 3, 5, 3), Margin = new Thickness(2, 0, 0, 0) };
+            var icon = new System.Windows.Shapes.Path { Data = Geometry.Parse(geometry), Width = 16, Height = 16,
+                StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+                StrokeLineJoin = PenLineJoin.Round, Stretch = Stretch.Uniform };
+            icon.SetBinding(System.Windows.Shapes.Shape.StrokeProperty, new System.Windows.Data.Binding("Foreground") {
+                RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(Button), 1) });
+            var button = new Button { Content = icon, Width = 30, Height = 28, MinWidth = 30, ToolTip = label,
+                Padding = new Thickness(6, 5, 6, 5), Margin = new Thickness(2, 0, 0, 0) };
+            AutomationProperties.SetName(button, label);
             button.Click += (_, _) => OrderRequested?.Invoke(destination);
             actions.Children.Add(button);
         }
+        BuildDragGrip(index);
+    }
+
+    private void BuildDragGrip(int index)
+    {
         var grip = new Thumb { Width = 30, Height = 28, Margin = new Thickness(4, 0, 0, 0),
             Cursor = Cursors.SizeNS, Focusable = true, ToolTip = "按住上下拖动排序；Alt+上下键逐行移动" };
         AutomationProperties.SetName(grip, "上下拖动账号顺序");
