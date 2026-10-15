@@ -19,12 +19,16 @@ internal static class ClientAttachment
         NativePlacement.Move(floating, position);
         var own = ownWindows.ToHashSet();
         // 重排Owner会连带降低详情窗口；交互期间仅跟随位置，离开本工具后恢复附着层级。
-        if (interacting || own.Contains(GetForegroundWindow())) return true;
+        if (KeepInteractionLayer(interacting, GetForegroundWindow(), client, own)) return true;
         var preceding = GetWindow(client, 3);
         while (preceding != IntPtr.Zero && own.Contains(preceding)) preceding = GetWindow(preceding, 3);
         if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = new IntPtr(-2);
         return SetWindowPos(new WindowInteropHelper(floating).Handle, preceding, 0, 0, 0, 0, 0x0013);
     }
+
+    internal static bool KeepInteractionLayer(bool interacting, IntPtr foreground, IntPtr client,
+        IReadOnlySet<IntPtr> own)
+        => foreground != client && (interacting || own.Contains(foreground));
 
     internal static bool TryReadOffset(Window floating, IntPtr client, out Point offset)
     {

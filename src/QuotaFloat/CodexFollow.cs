@@ -14,6 +14,8 @@ public partial class MainWindow
     private Func<IntPtr?> clientHandleReader = CodexClientWindows.FindClient;
     private IntPtr attachedClient;
     private Func<IntPtr, bool>? coverageReader;
+    private ForegroundWatcher? foregroundWatcher;
+    private bool foregroundUpdateQueued;
     private bool EffectiveTopmost => attachedClient == IntPtr.Zero && settings.AlwaysOnTop;
     private IEnumerable<IntPtr> OwnHandles => new Window[] { this, details, peek }.Select(w => new WindowInteropHelper(w).Handle);
     private readonly MenuItem followMenu = new() { Header = "跟随 Codex 显示/隐藏", IsCheckable = true };
@@ -30,7 +32,7 @@ public partial class MainWindow
         menu.Opened += (_, _) => followMenu.IsChecked = settings.FollowCodex;
         clientTimer.Tick += (_, _) => FollowClient();
         Loaded += (_, _) => ConfigureClientFollow();
-        Closed += (_, _) => clientTimer.Stop();
+        Closed += (_, _) => { clientTimer.Stop(); StopForegroundWatcher(); };
     }
 
     private void ConfigureClientFollow()
@@ -38,7 +40,35 @@ public partial class MainWindow
         followMenu.IsChecked = settings.FollowCodex;
         if (settings.FollowCodex) clientTimer.Start();
         else clientTimer.Stop();
+        ConfigureForegroundWatcher();
         FollowClient();
+    }
+
+    private void ConfigureForegroundWatcher()
+    {
+        if (!settings.FollowCodex) { StopForegroundWatcher(); return; }
+        if (foregroundWatcher is not null) return;
+        try { foregroundWatcher = new ForegroundWatcher(QueueForegroundUpdate); }
+        catch (Win32Exception)
+        { tray.Text = "Codex 额度浮窗 · 前台监听失败，使用500ms轮询"; }
+    }
+
+    private void StopForegroundWatcher()
+    {
+        try { foregroundWatcher?.Dispose(); foregroundWatcher = null; }
+        catch (Win32Exception)
+        { tray.Text = "Codex 额度浮窗 · 前台监听释放失败"; }
+    }
+
+    private void QueueForegroundUpdate()
+    {
+        if (!settings.FollowCodex || foregroundUpdateQueued || Dispatcher.HasShutdownStarted) return;
+        foregroundUpdateQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+        {
+            foregroundUpdateQueued = false;
+            if (settings.FollowCodex && foregroundWatcher is not null) FollowClient();
+        }));
     }
 
     private void FollowClient()

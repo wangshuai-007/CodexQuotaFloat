@@ -25,6 +25,7 @@ public partial class MainWindow
             await CheckRelativeAttachmentAsync(client, handle, checks);
             await CheckAttachedPeekLayerAsync(checks);
             await CheckInactiveClientDetailsAsync(client, handle, checks);
+            await CheckForegroundReturnAsync(client, handle, checks);
             pinned = true; Expand();
             client.WindowState = WindowState.Minimized;
             await Task.Delay(650);
@@ -43,7 +44,8 @@ public partial class MainWindow
             second.Hide(); await Task.Delay(650);
             Check(!IsVisible, "所有客户端窗口隐藏后隐藏浮窗", checks);
             settings.FollowCodex = false; ConfigureClientFollow();
-            Check(IsVisible && !clientTimer.IsEnabled, "关闭跟随立即显示并停止窗口轮询", checks);
+            Check(IsVisible && !clientTimer.IsEnabled && foregroundWatcher is null,
+                "关闭跟随立即显示并停止窗口轮询及前台监听", checks);
             settings.FollowCodex = true; ConfigureClientFollow();
             ShowFromTray();
             Check(IsVisible && settings.FollowCodex && clientTimer.IsEnabled,
