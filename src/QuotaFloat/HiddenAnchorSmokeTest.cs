@@ -23,9 +23,21 @@ public partial class MainWindow
             Check(ClientAttachment.Place(this, handle, OwnHandles, FollowOffset) && AppearsAbove(this, client),
                 "隐藏Owned辅助窗口存在时浮窗仍排在客户端上方", checks);
             Check(!IsNativeTopmost(this), "修复隐藏锚点不依赖全局置顶", checks);
+            CheckPassiveRecovery(client, handle, checks);
             CheckTopmostAttachmentAnchor(client, handle, checks);
         }
         finally { DestroyAnchorHelper(helper); }
+    }
+
+    private void CheckPassiveRecovery(Window client, IntPtr handle, List<string> checks)
+    {
+        var window = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        Check(FollowTestSetWindowPos(window, handle, 0, 0, 0, 0, 0x0213) &&
+            !ClientAttachment.IsAbove(window, handle), "构造原生移动成功但实际仍在客户端后方", checks);
+        var foreground = LayerForegroundWindow();
+        Check(ClientAttachment.RecoverLayer(window, handle, IntPtr.Zero) && AppearsAbove(this, client) &&
+            !IsNativeTopmost(this) && LayerForegroundWindow() == foreground,
+            "被动恢复后实际高于客户端、撤销置顶且不抢焦点", checks);
     }
 
     private void CheckTopmostAttachmentAnchor(Window client, IntPtr handle, List<string> checks)

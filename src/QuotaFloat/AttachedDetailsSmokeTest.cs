@@ -22,19 +22,25 @@ public partial class MainWindow
                 "Codex可见但无焦点时可进入详情回归场景", checks);
             pinned = true;
             Expand(true);
+            foregroundReader = () => new WindowInteropHelper(details).Handle;
             Check(details.IsVisible && AppearsAbove(details, other) && !IsNativeTopmost(details),
                 "点击非焦点Codex浮窗后列表在普通窗口之上，不变成全局置顶", checks);
             Check(details.IsActive, "点击详情激活列表窗口", checks);
             var foreground = LayerForegroundWindow();
             await Task.Delay(1250);
             Check(details.IsVisible && AppearsAbove(details, other) && LayerForegroundWindow() == foreground,
-                "详情交互期间跨两次附着轮询保持层级与焦点", checks);
+                "注入详情前台状态时跨两次附着轮询保持层级与焦点", checks);
             other.Activate();
+            foregroundReader = () => otherHandle;
             await Task.Delay(1250);
             Check(details.IsVisible && !details.IsActive && !AppearsAbove(details, other),
                 "离开详情后恢复客户端附着层级，不盖住当前应用", checks);
         }
-        finally { other.Close(); Collapse(); client.Activate(); }
+        finally
+        {
+            foregroundReader = ClientAttachment.ForegroundWindow;
+            other.Close(); Collapse(); client.Activate();
+        }
     }
 
     private static bool AppearsAbove(Window higher, Window lower)

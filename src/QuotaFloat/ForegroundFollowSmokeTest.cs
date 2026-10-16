@@ -11,7 +11,9 @@ public partial class MainWindow
         var own = OwnHandles.ToHashSet();
         Check(!ClientAttachment.KeepInteractionLayer(true, handle, handle, own),
             "返回Codex前台优先恢复层级，不被滞后激活状态阻止", checks);
-        Check(ClientAttachment.KeepInteractionLayer(true, new IntPtr(123), handle, own),
+        Check(!ClientAttachment.KeepInteractionLayer(true, new IntPtr(123), handle, own),
+            "外部窗口前台时不把线程激活状态误当成浮窗交互", checks);
+        Check(ClientAttachment.KeepInteractionLayer(true, new WindowInteropHelper(details).Handle, handle, own),
             "详情交互期间仍保留已有层级保护", checks);
         Check(foregroundWatcher is not null, "跟随启用时成功注册前台切换监听", checks);
         var other = new Window { Title = "前台切换回归", Width = 100, Height = 80 };

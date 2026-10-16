@@ -14,6 +14,7 @@ public partial class MainWindow
     private Func<IntPtr?> clientHandleReader = CodexClientWindows.FindClient;
     private IntPtr attachedClient;
     private Func<IntPtr, bool>? coverageReader;
+    private Func<IntPtr> foregroundReader = ClientAttachment.ForegroundWindow;
     private ForegroundWatcher? foregroundWatcher;
     private bool foregroundUpdateQueued;
     private bool EffectiveTopmost => attachedClient == IntPtr.Zero && settings.AlwaysOnTop;
@@ -92,14 +93,15 @@ public partial class MainWindow
             return;
         }
         var available = CodexClientWindows.IsAvailable(next);
-        var covered = coverageReader?.Invoke(next) ?? ClientAttachment.Covered(next, OwnHandles);
+        var foreground = foregroundReader();
+        var covered = coverageReader?.Invoke(next) ?? ClientAttachment.CoveredBy(next, foreground, OwnHandles);
         ApplyClientVisibility(available is null ? true : available == true && !covered);
         if (IsVisible && available == true)
         {
             try
             {
                 if (!ClientAttachment.Place(this, next, OwnHandles, FollowOffset,
-                    interacting: IsActive || details.IsActive)) AttachmentFailed();
+                    interacting: IsActive || details.IsActive, foreground: foreground)) AttachmentFailed();
             }
             catch (Win32Exception) { AttachmentFailed(); }
             peek.KeepOnTop();

@@ -8,7 +8,7 @@ namespace QuotaFloat;
 internal static class ClientAttachment
 {
     internal static bool Place(Window floating, IntPtr client, IEnumerable<IntPtr> ownWindows, Point? offset = null,
-        bool interacting = false)
+        bool interacting = false, IntPtr? foreground = null)
     {
         if (!GetWindowRect(client, out var bounds)) return false;
         var scale = Math.Max(96u, GetDpiForWindow(client)) / 96d;
@@ -19,16 +19,42 @@ internal static class ClientAttachment
         NativePlacement.Move(floating, position);
         var own = ownWindows.ToHashSet();
         // 重排Owner会连带降低详情窗口；交互期间仅跟随位置，离开本工具后恢复附着层级。
-        if (KeepInteractionLayer(interacting, GetForegroundWindow(), client, own)) return true;
+        if (KeepInteractionLayer(interacting, foreground ?? GetForegroundWindow(), client, own)) return true;
         var preceding = AttachmentAnchor(client, own);
         // HWND_NOTOPMOST对本来就非置顶的窗口不重排；HWND_TOP才会恢复普通窗口组顶端。
         if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = IntPtr.Zero;
-        return SetWindowPos(new WindowInteropHelper(floating).Handle, preceding, 0, 0, 0, 0, 0x0013);
+        var window = new WindowInteropHelper(floating).Handle;
+        if (!SetWindowPos(window, preceding, 0, 0, 0, 0, 0x0213)) return false;
+        return IsAbove(window, client) || RecoverLayer(window, client, preceding);
     }
 
     internal static bool KeepInteractionLayer(bool interacting, IntPtr foreground, IntPtr client,
         IReadOnlySet<IntPtr> own)
-        => foreground != client && (interacting || own.Contains(foreground));
+        => foreground != client && (foreground != IntPtr.Zero && own.Contains(foreground) ||
+            foreground == IntPtr.Zero && interacting);
+
+    internal static IntPtr ForegroundWindow() => GetForegroundWindow();
+
+    internal static bool IsAbove(IntPtr window, IntPtr client)
+    {
+        var seen = new HashSet<IntPtr>();
+        var cursor = GetWindow(client, 3);
+        while (cursor != IntPtr.Zero && seen.Add(cursor))
+        {
+            if (cursor == window) return true;
+            cursor = GetWindow(cursor, 3);
+        }
+        return false;
+    }
+
+    internal static bool RecoverLayer(IntPtr window, IntPtr client, IntPtr anchor)
+    {
+        // 后台进程的HWND_TOP可能成功返回却不抬高。仅失败时瞬时抬升并立即撤销置顶，且不激活。
+        if (!SetWindowPos(window, new IntPtr(-1), 0, 0, 0, 0, 0x0213)) return false;
+        if (!SetWindowPos(window, new IntPtr(-2), 0, 0, 0, 0, 0x0213)) return false;
+        if (anchor != IntPtr.Zero && !SetWindowPos(window, anchor, 0, 0, 0, 0, 0x0213)) return false;
+        return IsAbove(window, client);
+    }
 
     internal static IntPtr AttachmentAnchor(IntPtr client, IReadOnlySet<IntPtr> own)
     {
