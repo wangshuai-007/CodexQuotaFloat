@@ -20,15 +20,32 @@ internal static class ClientAttachment
         var own = ownWindows.ToHashSet();
         // 重排Owner会连带降低详情窗口；交互期间仅跟随位置，离开本工具后恢复附着层级。
         if (KeepInteractionLayer(interacting, GetForegroundWindow(), client, own)) return true;
-        var preceding = GetWindow(client, 3);
-        while (preceding != IntPtr.Zero && own.Contains(preceding)) preceding = GetWindow(preceding, 3);
-        if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = new IntPtr(-2);
+        var preceding = AttachmentAnchor(client, own);
+        // HWND_NOTOPMOST对本来就非置顶的窗口不重排；HWND_TOP才会恢复普通窗口组顶端。
+        if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = IntPtr.Zero;
         return SetWindowPos(new WindowInteropHelper(floating).Handle, preceding, 0, 0, 0, 0, 0x0013);
     }
 
     internal static bool KeepInteractionLayer(bool interacting, IntPtr foreground, IntPtr client,
         IReadOnlySet<IntPtr> own)
         => foreground != client && (interacting || own.Contains(foreground));
+
+    internal static IntPtr AttachmentAnchor(IntPtr client, IReadOnlySet<IntPtr> own)
+    {
+        var seen = new HashSet<IntPtr>();
+        var candidate = GetWindow(client, 3);
+        while (candidate != IntPtr.Zero && seen.Add(candidate))
+        {
+            // IME等隐藏Owned窗口不代表应用层级，拿它作锚点会受Owner分组重排影响。
+            if (!own.Contains(candidate) && IsWindowVisible(candidate) &&
+                GetWindow(candidate, 4) == IntPtr.Zero && !IsCloaked(candidate)) return candidate;
+            candidate = GetWindow(candidate, 3);
+        }
+        return IntPtr.Zero;
+    }
+
+    private static bool IsCloaked(IntPtr window)
+        => DwmGetWindowAttribute(window, 14, out int cloaked, sizeof(int)) == 0 && cloaked != 0;
 
     internal static bool TryReadOffset(Window floating, IntPtr client, out Point offset)
     {
@@ -47,8 +64,8 @@ internal static class ClientAttachment
     {
         if (foreground == IntPtr.Zero || foreground == client || ownWindows.Contains(foreground)) return false;
         if (!GetWindowRect(client, out var target) || !GetWindowRect(foreground, out var front)) return false;
-        if (DwmGetWindowAttribute(client, 9, out var visibleTarget, Marshal.SizeOf<Bounds>()) == 0) target = visibleTarget;
-        if (DwmGetWindowAttribute(foreground, 9, out var visibleFront, Marshal.SizeOf<Bounds>()) == 0) front = visibleFront;
+        if (DwmGetWindowAttribute(client, 9, out Bounds visibleTarget, Marshal.SizeOf<Bounds>()) == 0) target = visibleTarget;
+        if (DwmGetWindowAttribute(foreground, 9, out Bounds visibleFront, Marshal.SizeOf<Bounds>()) == 0) front = visibleFront;
         return front.Left <= target.Left && front.Top <= target.Top && front.Right >= target.Right && front.Bottom >= target.Bottom;
     }
 
@@ -61,11 +78,16 @@ internal static class ClientAttachment
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
     private static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out Bounds bounds, int size);
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
 }
