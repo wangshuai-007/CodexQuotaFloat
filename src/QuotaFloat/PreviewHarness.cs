@@ -15,6 +15,7 @@ public static class PreviewHarness
     {
         Directory.CreateDirectory(output);
         var report = new List<string>();
+        IconPreview.Run(output, report);
         var now = DateTimeOffset.Now;
         foreach (var count in new[] { 3, 10, 12, 0 })
         {
