@@ -5,6 +5,12 @@ using QuotaFloat.Core;
 
 if (args.SequenceEqual(new[] { "app-server" })) { await FakeCodexServer.RunAsync(); return; }
 if (args.Contains("--check-local-auth")) { await LocalAuthLiveCheck.RunAsync(); return; }
+if (args.Length == 2 && args[0] == "--check-hook-status")
+{
+    var status = await CodexHookInspector.CheckAsync(args[1]);
+    Console.WriteLine(JsonSerializer.Serialize(status));
+    return;
+}
 
 var now = new DateTimeOffset(2026, 10, 10, 16, 30, 0, TimeSpan.FromHours(8));
 var passed = 0;
@@ -119,6 +125,7 @@ passed += await CpaFailureTests.RunAsync();
 passed += ViewportTests.Run();
 passed += WaterDisplayTests.Run();
 passed += SessionHookTests.Run();
+passed += await HookStatusTests.RunAsync();
 passed += TrafficRateTests.Run();
 passed += await KeeperTests.RunAsync();
 passed += ManagementKeyTests.Run();

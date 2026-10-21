@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace QuotaFloat.Core;
 
-/// <summary>受限stdio客户端，只调用初始化、账号读取和额度读取，不创建对话或推理。</summary>
+/// <summary>受限stdio客户端，用于账号、额度及配置/钩子状态读取，不创建对话或推理。</summary>
 internal sealed class CodexRpc : IDisposable
 {
     private readonly Process process;
@@ -24,10 +24,11 @@ internal sealed class CodexRpc : IDisposable
         stderr = DrainAsync(process.StandardError);
     }
 
-    internal async Task InitializeAsync(CancellationToken token)
+    internal async Task InitializeAsync(CancellationToken token, bool experimental = false)
     {
         using var response = await RequestAsync("initialize", new { clientInfo = new
-            { name = "codex_quota_float", title = "Codex额度浮窗", version = "0.2" } }, token);
+            { name = "codex_quota_float", title = "Codex额度浮窗", version = "0.2" },
+            capabilities = new { experimentalApi = experimental } }, token);
         await process.StandardInput.WriteLineAsync("{\"method\":\"initialized\",\"params\":{}}".AsMemory(), token);
         await process.StandardInput.FlushAsync(token);
     }

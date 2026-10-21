@@ -7,8 +7,15 @@
   <CheckBox x:Name="TopmostOption" Content="始终置顶"/>
   <CheckBox x:Name="DockOption" Content="拖动到屏幕边缘时自动停靠"/>
   <CheckBox x:Name="MotionOption" Content="减弱动效"/>
-  <CheckBox x:Name="FollowCodexOption" Content="跟随 Codex 客户端显示/隐藏"/>
+  <CheckBox x:Name="FollowCodexOption" Content="跟随 Codex 客户端显示/隐藏" Checked="FollowOptionChanged" Unchecked="FollowOptionChanged"/>
   <TextBlock Text="开启时自动配置 SessionStart 启动检查：未运行则后台启动，已运行则跳过；关闭时仅移除本工具的钩子。首次需在 Codex 中审核并信任钩子，打开首页不保证触发。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+  <StackPanel x:Name="HookStatusSection" Visibility="Collapsed" Margin="0,8,0,4">
+   <DockPanel>
+    <Button x:Name="HookCheckButton" DockPanel.Dock="Right" Content="重新检测" Click="HookCheckClicked" Margin="10,0,0,0" AutomationProperties.Name="重新检测 Codex 钩子信任状态"/>
+    <TextBlock x:Name="HookStatusLabel" Text="尚未检测" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
+   </DockPanel>
+   <TextBlock Text="只读当前用户 CODEX_HOME 的CLI状态，不会自动信任；勾选尚未保存时检测的是已有配置。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+  </StackPanel>
   <TextBlock Text="首次附着在客户端右侧；拖动水柱可调整位置，保存相对客户端的偏移并跟随移动，不做全局置顶；最小化、隐藏或被前台窗口完整覆盖时隐藏，返回后恢复。未找到客户端或不能附着时独立显示。托盘显示不清除勾选；仅支持桌面客户端。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
   <TextBlock Text="浮窗总额度水位" Margin="0,16,0,8" FontWeight="SemiBold"/>
   <ComboBox x:Name="QuotaDisplayOption" Height="38" AutomationProperties.Name="浮窗总额度水位">

@@ -47,6 +47,7 @@ public partial class SettingsWindow : Window
         try { DefaultAuthLabel.Text = "自动：已安装的Codex CLI；无CLI时读取 " + LocalCodexAuth.ResolvePath(null); }
         catch (ArgumentException) { DefaultAuthLabel.Text = "默认CODEX_HOME路径无效，请手动选择认证文件。"; }
         SourceOption.SelectedIndex = current.UseDemo ? 0 : current.UseLocalAuth ? 2 : 1;
+        InitializeHookStatus();
     }
 
     private void SourceChanged(object sender, SelectionChangedEventArgs e)
@@ -83,7 +84,7 @@ public partial class SettingsWindow : Window
         if (dialog.ShowDialog(this) == true) LocalAuthOption.Text = dialog.FileName;
     }
 
-    private void SaveClicked(object sender, RoutedEventArgs e)
+    private async void SaveClicked(object sender, RoutedEventArgs e)
     {
         var count = Result.DemoCount;
         if (SourceOption.SelectedIndex == 0 && (!int.TryParse(DemoCountOption.Text, out count) || count is < 0 or > 100))
@@ -121,13 +122,16 @@ public partial class SettingsWindow : Window
             AllowKeeperLanHttp = KeeperHttpOption.IsChecked == true,
             Left = Result.Left, Top = Result.Top
         };
-        if (!SaveOptions(next)) return;
+        settingsSaving = true;
+        IsEnabled = false;
+        try { if (!await SaveOptionsAsync(next)) return; }
+        finally { IsEnabled = true; settingsSaving = false; }
         Result = next;
         ManagementKey = KeyOption.Password;
         DialogResult = true;
     }
 
-    private bool SaveOptions(AppSettings next)
+    private async Task<bool> SaveOptionsAsync(AppSettings next)
     {
         bool hookChanged;
         try { hookChanged = FollowStartupIntegration.Apply(next.FollowCodex); }
@@ -141,8 +145,13 @@ public partial class SettingsWindow : Window
             { ValidationError.Text = "设置保存失败，启动钩子也未能恢复；请检查 settings.json 和 hooks.json 权限。"; return false; }
             ValidationError.Text = "无法保存本地设置，请检查 settings.json 的目录权限。"; return false;
         }
-        if (hookChanged && next.FollowCodex)
-            MessageBox.Show(this, FollowStartupIntegration.TrustNotice, "Codex 会话启动检查", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (next.FollowCodex)
+        {
+            var status = await RefreshHookStatusAsync();
+            if (status is not null)
+                MessageBox.Show(this, status.Message, "Codex 会话启动检查",
+                    MessageBoxButton.OK, status.Ready ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
         return true;
     }
 

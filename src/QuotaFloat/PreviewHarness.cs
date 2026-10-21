@@ -61,6 +61,7 @@ public static class PreviewHarness
         compact.Close();
         await HoverPreview.RunAsync(output, report);
         LocalAuthPreview.Run(output, report);
+        HookStatusPreview.Run(output, report);
         await WaterDisplayPreview.RunAsync(output, report);
         WaterDesignPreview.Run(output, report);
         await WaterPeekPreview.RunAsync(output, report);

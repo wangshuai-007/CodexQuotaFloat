@@ -8,7 +8,8 @@ namespace QuotaFloat.Core;
 /// <summary>维护本工具的用户级SessionStart启动检查，保留其他钩子及配置字段。</summary>
 public static class CodexSessionHook
 {
-    private const string Marker = "CodexQuotaFloat: 检查浮窗启动";
+    /// <summary>只用于识别本工具的启动检查，不作为可信依据。</summary>
+    public const string Marker = "CodexQuotaFloat: 检查浮窗启动";
 
     /// <summary>按跟随开关安装或移除自身钩子；修改前备份，损坏配置保持原样并报错。</summary>
     public static bool Configure(bool enabled, string executable, string? codexHome = null)
