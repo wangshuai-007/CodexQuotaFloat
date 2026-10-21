@@ -9,8 +9,35 @@ internal static class SessionHookTests
     {
         var folder = Path.Combine(Path.GetTempPath(), "QuotaFloat-Hooks-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
-        try { return CheckFiles(folder); }
+        try { return CheckFiles(folder) + CheckFullCommand(folder); }
         finally { Directory.Delete(folder, true); }
+    }
+
+    private static int CheckFullCommand(string folder)
+    {
+        if (!OperatingSystem.IsWindows()) return 0;
+        // 只验证完整命令入口；持有同名锁让启动脚本静默跳过，不启动GUI或改用户配置。
+        using var existing = new Mutex(false, "Local\\CodexQuotaFloat");
+        var command = CodexSessionHook.BuildCommand(Path.Combine(folder, "not-launched.exe"));
+        var info = new System.Diagnostics.ProcessStartInfo(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            "System32", "WindowsPowerShell", "v1.0", "powershell.exe"))
+        { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand",
+            Convert.ToBase64String(Encoding.Unicode.GetBytes(command)) }) info.ArgumentList.Add(argument);
+        using var process = System.Diagnostics.Process.Start(info)!;
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(15000))
+        {
+            process.Kill(); process.WaitForExit();
+            throw new InvalidOperationException("完整钩子命令入口验证超时。");
+        }
+        Task.WaitAll(stdout, stderr);
+        if (process.ExitCode != 0 || stdout.Result.Length != 0)
+            throw new InvalidOperationException("完整钩子命令未能经PowerShell静默成功执行。");
+        Console.WriteLine("通过：完整钩子命令经Windows PowerShell实际解释执行成功且无stdout输出");
+        return 1;
     }
 
     private static int CheckFiles(string folder)
@@ -32,6 +59,7 @@ internal static class SessionHookTests
         var root = JsonNode.Parse(first)!;
         var handler = root["hooks"]!["SessionStart"]![0]!["hooks"]![0]!;
         var command = handler["command"]!.ToString();
+        Check("完整钩子命令显式调用带引号的Windows程序路径", command.StartsWith("& \"") && command.Contains("powershell.exe\" -NoProfile"));
         var script = Encoding.Unicode.GetString(Convert.FromBase64String(command.Split(' ')[^1]));
         Check("启动检查不依赖cwd且正确转义中文单引号路径", script.Contains(exe.Replace("'", "''")));
         Check("启动检查使用单实例锁和静默参数", script.Contains("TryOpenExisting") && script.Contains("--session-start") && script.Contains("-WindowStyle Hidden"));

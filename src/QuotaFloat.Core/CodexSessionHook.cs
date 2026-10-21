@@ -99,7 +99,8 @@ public static class CodexSessionHook
             "finally { if ($null -ne $lock) { $lock.Dispose() } }\n";
         var shell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
-        return $"\"{shell}\" -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand " +
+        // Windows钩子由PowerShell解释；带引号的程序路径必须显式使用调用运算符。
+        return $"& \"{shell}\" -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand " +
             Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
     }
 
