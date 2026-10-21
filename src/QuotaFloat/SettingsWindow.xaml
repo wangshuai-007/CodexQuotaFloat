@@ -14,7 +14,6 @@
     <Button x:Name="HookCheckButton" DockPanel.Dock="Right" Content="重新检测" Click="HookCheckClicked" Margin="10,0,0,0" AutomationProperties.Name="重新检测 Codex 钩子信任状态"/>
     <TextBlock x:Name="HookStatusLabel" Text="尚未检测" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
    </DockPanel>
-   <TextBlock Text="只读当前用户 CODEX_HOME 的CLI状态，不会自动信任；勾选尚未保存时检测的是已有配置。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
   </StackPanel>
   <TextBlock Text="浮窗总额度水位" Margin="0,16,0,8" FontWeight="SemiBold"/>
   <ComboBox x:Name="QuotaDisplayOption" Height="38" AutomationProperties.Name="浮窗总额度水位">

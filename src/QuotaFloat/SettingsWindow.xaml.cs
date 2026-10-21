@@ -148,7 +148,7 @@ public partial class SettingsWindow : Window
         if (next.FollowCodex)
         {
             var status = await RefreshHookStatusAsync();
-            if (status is not null)
+            if (status is { Ready: false })
                 MessageBox.Show(this, status.Message, "Codex 会话启动检查",
                     MessageBoxButton.OK, status.Ready ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }

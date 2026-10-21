@@ -19,7 +19,7 @@ internal static class HookStatusPreview
         {
             var window = new SettingsWindow(new AppSettings { FollowCodex = true, UseDemo = true }, "fixture");
             window.ShowHookStatus(status);
-            if (window.HookStatusSection.Visibility != Visibility.Visible || !window.HookCheckButton.IsEnabled ||
+            if (window.HookStatusSection.Visibility != (status.Ready ? Visibility.Collapsed : Visibility.Visible) || !window.HookCheckButton.IsEnabled ||
                 window.HookStatusLabel.Text != status.Message)
                 throw new InvalidOperationException("信任检测页状态错误");
             var panel = (FrameworkElement)window.Content;

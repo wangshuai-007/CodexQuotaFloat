@@ -33,6 +33,7 @@ public partial class SettingsWindow
         hookCheck?.Cancel();
         using var request = new CancellationTokenSource();
         hookCheck = request;
+        HookStatusSection.Visibility = Visibility.Visible;
         HookCheckButton.IsEnabled = false;
         HookStatusLabel.Text = "正在检测 Codex 钩子信任状态…";
         HookStatusLabel.Foreground = (System.Windows.Media.Brush)FindResource("Muted");
@@ -57,6 +58,7 @@ public partial class SettingsWindow
 
     internal void ShowHookStatus(CodexHookStatus status)
     {
+        HookStatusSection.Visibility = status.Ready ? Visibility.Collapsed : Visibility.Visible;
         HookStatusLabel.Text = status.Message;
         HookStatusLabel.Foreground = (System.Windows.Media.Brush)FindResource(status.Ready ? "Week" : "Danger");
     }
