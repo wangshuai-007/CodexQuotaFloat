@@ -1,5 +1,7 @@
 # 数据源配置与排错
 
+Codex Hook 关联启动不属于数据源配置；开启、信任、首次消息触发及排错见 [Hook 关联启动图文指南](codex-hook.md)。
+
 ## CPA额度
 
 新版管理根地址例：`https://cpa.example.com/v8/management`；本机默认 `http://127.0.0.1:8317/v8/management`。旧版支持显式 `/v0/management`，不自动探测回退。

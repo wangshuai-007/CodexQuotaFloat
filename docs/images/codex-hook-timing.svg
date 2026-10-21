@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="568" viewBox="0 0 1120 568" role="img" aria-labelledby="title desc">
+  <title id="title">关联启动何时触发</title>
+  <desc id="desc">先启用并信任钩子。新建会话后发送首条消息，SessionStart检查浮窗进程；没有进程则后台启动，已有进程则静默跳过。仅开首页不保证触发，每条后续消息不重复触发。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f7faf8"/><stop offset="1" stop-color="#eaf2ef"/></linearGradient>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#738e94" stroke-width="1.4"/></marker>
+  </defs>
+  <rect width="1120" height="568" rx="24" fill="url(#bg)"/>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#24353d">
+    <text x="48" y="64" font-size="30" font-weight="700">先信任，再验证首次消息触发</text>
+    <text x="48" y="103" font-size="19" fill="#617680">本项目实测的新会话路径示意；不同客户端版本的加载时机可能变化。</text>
+    <path d="M48 130H1072" stroke="#d0ded9"/>
+    <text x="48" y="164" font-size="20" fill="#128369">前提：跟随已开启，钩子已启用且状态为 trusted。</text>
+    <rect x="48" y="204" width="260" height="104" rx="14" fill="#fff" stroke="#d5e1dd"/>
+    <text x="178" y="246" text-anchor="middle" font-size="23" font-weight="700">新建会话</text>
+    <text x="178" y="280" text-anchor="middle" font-size="18" fill="#617680">不是仅打开客户端首页</text>
+    <path d="M320 256H386" stroke="#738e94" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="400" y="204" width="280" height="104" rx="14" fill="#e5f0f8" stroke="#96bad3"/>
+    <text x="540" y="246" text-anchor="middle" font-size="23" font-weight="700">发送首条消息</text>
+    <text x="540" y="280" text-anchor="middle" font-size="18" fill="#456a80">空白聊天不足以验证</text>
+    <path d="M692 256H758" stroke="#738e94" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="772" y="204" width="300" height="104" rx="14" fill="#fff" stroke="#d5e1dd"/>
+    <text x="922" y="246" text-anchor="middle" font-size="23" font-weight="700">SessionStart</text>
+    <text x="922" y="280" text-anchor="middle" font-size="18" fill="#617680">检查浮窗是否已经运行</text>
+    <path d="M922 308V342H382V374" fill="none" stroke="#738e94" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M922 342V374" fill="none" stroke="#738e94" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="240" y="386" width="284" height="90" rx="14" fill="#e3f2eb" stroke="#8dbba8"/>
+    <text x="382" y="424" text-anchor="middle" font-size="22" font-weight="700" fill="#126f58">未运行 → 后台启动</text>
+    <text x="382" y="455" text-anchor="middle" font-size="18" fill="#456d62">按跟随规则显示浮窗</text>
+    <rect x="772" y="386" width="300" height="90" rx="14" fill="#fff" stroke="#d5e1dd"/>
+    <text x="922" y="424" text-anchor="middle" font-size="22" font-weight="700">已运行 → 静默跳过</text>
+    <text x="922" y="455" text-anchor="middle" font-size="18" fill="#617680">不重复打开，不弹提示</text>
+    <text x="48" y="526" font-size="19" fill="#617680">注意：SessionStart 不是每条消息的钩子；modified / untrusted 状态会被跳过。</text>
+  </g>
+</svg>

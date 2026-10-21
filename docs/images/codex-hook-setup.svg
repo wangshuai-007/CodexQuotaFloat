@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="728" viewBox="0 0 1120 728" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Hook 关联启动：三步设置</title>
+  <desc id="desc">开启跟随并保存；在 Codex CLI 中使用 hooks 管理审核并信任；退出浮窗，在新会话发送首条消息验证。更新后的钩子需要重新信任。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f7faf8"/><stop offset="1" stop-color="#eaf2ef"/></linearGradient>
+  </defs>
+  <rect width="1120" height="728" rx="24" fill="url(#bg)"/>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#24353d">
+    <text x="48" y="64" font-size="32" font-weight="700">Codex Hook 关联启动</text>
+    <text x="48" y="104" font-size="20" fill="#617680">三步设置 · 操作流程示意，非客户端截图</text>
+    <path d="M80 216V572" fill="none" stroke="#bfceca" stroke-width="3"/>
+    <rect x="128" y="144" width="944" height="144" rx="16" fill="#fff" stroke="#d5e1dd"/>
+    <circle cx="80" cy="200" r="28" fill="#287fb8"/>
+    <text x="80" y="208" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">1</text>
+    <text x="160" y="188" font-size="24" font-weight="700">开启跟随，并保存设置</text>
+    <text x="160" y="226" font-size="20">浮窗设置 → 跟随 Codex 客户端显示/隐藏 → 保存并刷新</text>
+    <text x="160" y="260" font-size="18" fill="#617680">程序自动配置 SessionStart；未运行才启动，保留其他钩子。</text>
+    <rect x="128" y="316" width="944" height="160" rx="16" fill="#fff" stroke="#d5e1dd"/>
+    <circle cx="80" cy="372" r="28" fill="#287fb8"/>
+    <text x="80" y="380" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">2</text>
+    <text x="160" y="360" font-size="24" font-weight="700">进入 Codex CLI，审核并信任</text>
+    <text x="160" y="398" font-size="20">PowerShell 输入 codex；进入 CLI 后输入 /hooks</text>
+    <text x="160" y="432" font-size="20">找到「CodexQuotaFloat: 检查浮窗启动」，审核并信任。</text>
+    <text x="160" y="460" font-size="18" fill="#a65b15">看到 modified？定义已变化，需要重新信任，不是重新建会话。</text>
+    <rect x="128" y="504" width="944" height="144" rx="16" fill="#fff" stroke="#d5e1dd"/>
+    <circle cx="80" cy="560" r="28" fill="#128369"/>
+    <text x="80" y="568" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">3</text>
+    <text x="160" y="548" font-size="24" font-weight="700">退出浮窗，在新会话发送首条消息</text>
+    <text x="160" y="586" font-size="20">确认 trusted 且已启用 → 托盘退出浮窗 → 新建聊天并发消息</text>
+    <text x="160" y="620" font-size="18" fill="#617680">只打开客户端首页或空白聊天，不保证执行启动检查。</text>
+    <text x="48" y="692" font-size="18" fill="#617680">会话钩子 ≠ 客户端进程启动事件；本工具不会绕过 Codex 的信任审核。</text>
+  </g>
+</svg>
