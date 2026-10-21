@@ -60,17 +60,17 @@ Windows 原生桌面浮窗：用水位查看多个账号的 Codex 剩余额度�
 
 开启跟随后，程序自动配置用户级 `SessionStart` 启动检查：**未运行则后台启动，已运行则静默跳过**。关闭跟随只移除本工具的钩子，保留其他配置。
 
-![Codex Hook关联启动三步说明](docs/images/codex-hook-setup.svg)
+![Codex客户端设置中的Hooks入口和本工具的SessionStart开关](docs/images/codex-hook-client.png)
 
 1. 浮窗设置中勾选 **跟随 Codex 客户端显示/隐藏**，保存。
-2. 在 PowerShell 输入 `codex`；进入 CLI 后输入 `/hooks`，审核并信任 **CodexQuotaFloat: 检查浮窗启动**。
+2. 在 **Codex 客户端 → 设置 → Hooks → User config**，找到 `SessionStart` 下的 **CodexQuotaFloat: 检查浮窗启动**，审核并信任，确认开关开启。
 3. 退出浮窗，在 Codex **新建聊天并发送首条消息**，验证自动启动。
 
 设置页自动检测钩子的信任与启用状态：已信任且启用时不显示提示，未就绪时显示原因及 **重新检测** 按钮；保存后再次检测，不会自动授予信任。
 
 **这不是客户端进程启动事件。** 本机引擎实测首次发送消息后执行钩子，仅打开客户端或空白聊天不保证触发，也不是每条消息都会检查。首次添加、更新命令或移动程序目录后需审核信任；`modified` / `untrusted` 状态不会因新建会话而自动变成可信。
 
-图中是流程示意，不是客户端截图。配置位置、更新迁移、关闭方式和排错见 [Hook 关联启动图文指南](docs/codex-hook.md)。
+图中红框标出客户端的 Hooks 入口和本工具的启用开关；开启开关不等于已完成信任审核。配置位置、更新迁移、关闭方式和排错见 [Hook 关联启动图文指南](docs/codex-hook.md)。
 
 ## 连接数据源
 

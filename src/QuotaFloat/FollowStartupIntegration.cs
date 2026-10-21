@@ -7,7 +7,7 @@ namespace QuotaFloat;
 /// <summary>将跟随开关与会话启动检查关联；离线预览不会改用户钩子。</summary>
 internal static class FollowStartupIntegration
 {
-    internal const string TrustNotice = "已配置会话启动检查。钩子新增或更新后需在 Codex 的钩子管理中审核并信任 CodexQuotaFloat；未信任前不会自动启动。仅打开首页不保证触发。";
+    internal const string TrustNotice = "已配置会话启动检查。请在 Codex 客户端设置 → Hooks → User config 中审核并信任 CodexQuotaFloat，并开启开关；未信任前不会自动启动。仅打开首页不保证触发。";
 
     internal static bool Apply(bool enabled) => CodexSessionHook.Configure(enabled,
         Path.Combine(AppContext.BaseDirectory, "CodexQuotaFloat.exe"));

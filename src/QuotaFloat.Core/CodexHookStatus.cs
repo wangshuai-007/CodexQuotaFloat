@@ -19,7 +19,7 @@ public static class CodexHookInspector
         {
             timeout.Token.ThrowIfCancellationRequested();
             cli ??= LocalCodexCli.Find();
-            if (cli is null) return Unknown("未找到原生 Codex CLI，无法确认信任状态；请在 Codex 的 /hooks 中检查。");
+            if (cli is null) return Unknown("未找到原生 Codex CLI，无法确认信任状态；请在 Codex 客户端的设置 → Hooks 中检查。");
             using var rpc = new CodexRpc(cli);
             await rpc.InitializeAsync(timeout.Token, true).ConfigureAwait(false);
             using var config = await rpc.RequestAsync("config/read", new { includeLayers = false }, timeout.Token).ConfigureAwait(false);
@@ -31,7 +31,7 @@ public static class CodexHookInspector
         { return Unknown("检测超时，信任状态未知；可点击重新检测。"); }
         catch (Exception error) when (error is IOException or FormatException or JsonException or
             Win32Exception or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.Security.SecurityException)
-        { return Unknown("无法读取 Codex 状态，可能是CLI版本不支持或配置无效；请在 /hooks 中检查。"); }
+        { return Unknown("无法读取 Codex 状态，可能是CLI版本不支持或配置无效；请在客户端设置 → Hooks 中检查。"); }
     }
 
     /// <summary>解析只读协议结果，严格匹配当前启动命令，不将同名旧钩子视为就绪。</summary>
@@ -45,7 +45,7 @@ public static class CodexHookInspector
             return Unknown("Codex 未返回有效钩子列表，信任状态未知。");
         var entry = entries[0];
         if (!Array(entry, "errors", out var errors) || errors.GetArrayLength() > 0)
-            return new(false, "configurationError", "Codex 钩子配置解析失败，无法确认可用性；请在 /hooks 中检查。");
+            return new(false, "configurationError", "Codex 钩子配置解析失败，无法确认可用性；请在客户端设置 → Hooks 中检查。");
         if (!Array(entry, "hooks", out var list)) return Unknown("Codex 钩子列表格式不支持，信任状态未知。");
         var own = list.EnumerateArray().Where(h => Text(h, "statusMessage") == CodexSessionHook.Marker &&
             Text(h, "eventName") == "sessionStart" && Text(h, "source") == "user").ToArray();
@@ -59,13 +59,13 @@ public static class CodexHookInspector
             return Unknown("Codex 未返回启用状态，无法确认关联启动可用。");
         var trust = Text(hook, "trustStatus");
         if (!enabled.GetBoolean())
-            return new(false, "disabled", $"启动钩子已禁用（信任状态：{TrustLabel(trust)}）；请在 /hooks 中启用并确认信任。");
+            return new(false, "disabled", $"启动钩子已禁用（信任状态：{TrustLabel(trust)}）；请在客户端设置 → Hooks 中启用并确认信任。");
         return trust switch
         {
             "trusted" => new(true, "ready", "已信任、已启用。关联启动已就绪；新会话首次发送消息后检查启动，不代表打开首页即触发。"),
-            "modified" => new(false, "modified", "启动钩子已修改，需要重新审核信任；进入 Codex CLI 的 /hooks，找到 CodexQuotaFloat。"),
-            "untrusted" => new(false, "untrusted", "启动钩子尚未信任；进入 Codex CLI 的 /hooks，审核并信任 CodexQuotaFloat。"),
-            _ => Unknown("Codex 返回未知信任状态；请在 /hooks 中检查，未确认关联启动可用。")
+            "modified" => new(false, "modified", "启动钩子已修改；请在 Codex 客户端设置 → Hooks → User config 中重新审核信任 CodexQuotaFloat。"),
+            "untrusted" => new(false, "untrusted", "启动钩子尚未信任；请在 Codex 客户端设置 → Hooks → User config 中审核并信任 CodexQuotaFloat。"),
+            _ => Unknown("Codex 返回未知信任状态；请在客户端设置 → Hooks 中检查，未确认关联启动可用。")
         };
     }
 

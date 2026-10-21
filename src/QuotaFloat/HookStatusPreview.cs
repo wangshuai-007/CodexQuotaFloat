@@ -13,7 +13,7 @@ internal static class HookStatusPreview
         foreach (var status in new[]
         {
             new CodexHookStatus(true, "ready", "已信任、已启用。关联启动已就绪；新会话首次发送消息后检查启动。"),
-            new CodexHookStatus(false, "modified", "启动钩子已修改，需要重新审核信任；进入 Codex CLI 的 /hooks，找到 CodexQuotaFloat。"),
+            new CodexHookStatus(false, "modified", "启动钩子已修改；请在 Codex 客户端设置 → Hooks → User config 中重新审核信任 CodexQuotaFloat。"),
             new CodexHookStatus(false, "unknown", "检测超时，信任状态未知；可点击重新检测。")
         })
         {
