@@ -67,14 +67,17 @@ public partial class App : Application
             }
             return;
         }
+        var (settings, warning) = SettingsStore.Load();
+        // 已加载的旧会话可能仍持有旧钩子；关闭跟随后的迟到启动应静默退出。
+        if (e.Args.Contains("--session-start") && !settings.FollowCodex) { Shutdown(); return; }
         instanceLock = new Mutex(true, "Local\\CodexQuotaFloat", out ownsLock);
         if (!ownsLock)
         {
-            MessageBox.Show("浮窗已在运行。双击任务栏托盘图标可重新显示。", "Codex 额度浮窗");
+            if (!e.Args.Contains("--session-start"))
+                MessageBox.Show("浮窗已在运行。双击任务栏托盘图标可重新显示。", "Codex 额度浮窗");
             Shutdown();
             return;
         }
-        var (settings, warning) = SettingsStore.Load();
         if (e.Args.Contains("--demo")) settings.UseDemo = true;
         var key = settings.UseLocalAuth && !settings.UseDemo ? "" : QuotaFloat.Core.ManagementKeyResolver.Read();
         var window = new MainWindow(settings, key);

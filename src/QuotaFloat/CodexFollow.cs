@@ -25,6 +25,8 @@ public partial class MainWindow
     {
         followMenu.Click += (_, _) =>
         {
+            if (!ApplyFollowStartup(followMenu.IsChecked))
+            { followMenu.IsChecked = settings.FollowCodex; return; }
             settings.FollowCodex = followMenu.IsChecked;
             SavePosition();
             ConfigureClientFollow();
@@ -32,7 +34,7 @@ public partial class MainWindow
         menu.Items.Insert(3, followMenu);
         menu.Opened += (_, _) => followMenu.IsChecked = settings.FollowCodex;
         clientTimer.Tick += (_, _) => FollowClient();
-        Loaded += (_, _) => ConfigureClientFollow();
+        Loaded += (_, _) => { if (settings.FollowCodex) ApplyFollowStartup(true, false); ConfigureClientFollow(); };
         Closed += (_, _) => { clientTimer.Stop(); StopForegroundWatcher(); };
     }
 

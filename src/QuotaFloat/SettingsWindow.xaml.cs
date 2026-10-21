@@ -121,12 +121,29 @@ public partial class SettingsWindow : Window
             AllowKeeperLanHttp = KeeperHttpOption.IsChecked == true,
             Left = Result.Left, Top = Result.Top
         };
-        try { SettingsStore.Save(next); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        { ValidationError.Text = "无法保存本地设置，请检查 settings.json 的目录权限。"; return; }
+        if (!SaveOptions(next)) return;
         Result = next;
         ManagementKey = KeyOption.Password;
         DialogResult = true;
+    }
+
+    private bool SaveOptions(AppSettings next)
+    {
+        bool hookChanged;
+        try { hookChanged = FollowStartupIntegration.Apply(next.FollowCodex); }
+        catch (Exception error) when (FollowStartupIntegration.IsConfigurationError(error))
+        { ValidationError.Text = "无法更新 Codex 的 hooks.json；请检查JSON格式及目录权限。设置未保存，其他钩子保持不变。"; return false; }
+        try { SettingsStore.Save(next); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            try { if (hookChanged) FollowStartupIntegration.Apply(Result.FollowCodex); }
+            catch (Exception rollback) when (FollowStartupIntegration.IsConfigurationError(rollback))
+            { ValidationError.Text = "设置保存失败，启动钩子也未能恢复；请检查 settings.json 和 hooks.json 权限。"; return false; }
+            ValidationError.Text = "无法保存本地设置，请检查 settings.json 的目录权限。"; return false;
+        }
+        if (hookChanged && next.FollowCodex)
+            MessageBox.Show(this, FollowStartupIntegration.TrustNotice, "Codex 会话启动检查", MessageBoxButton.OK, MessageBoxImage.Information);
+        return true;
     }
 
     private bool ValidateCpa(bool keeper)
