@@ -49,3 +49,5 @@ Gauge 绘制水柱；QuotaBar 复用三色进度；AccountRow 一行一个账号
 ## 实现备注
 颜色与控件在 Theme.xaml；Gauge 原生绘制使用同一语义色。自动生成原生WPF预览截图，不能替代真实鼠标/多屏人工验收。
 窗口图标用AppIconExtension保留ICO多尺寸BitmapFrame解码器，不得改回BitmapImage（会取小图并在任务栏大图标中居中留白）。IconPreview核验实际窗口HICON绘制面积，程序集与托盘沿用同一ICO资源。
+
+后台附着：坐标移动成功后，层级重排失败只留待轮询重试，不恢复另一显示器的独立保存位置；读取或移动位置失败仍沿用独立回退。
