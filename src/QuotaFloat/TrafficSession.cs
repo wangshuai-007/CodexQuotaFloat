@@ -16,6 +16,7 @@ internal sealed class TrafficSession : IDisposable
     private bool loading;
     private bool paused;
     private KeeperTrafficSource? keeper;
+    private LocalSessionTrafficSource? localSessions;
     internal TrafficSnapshot Snapshot { get; private set; } = TrafficSnapshot.Unknown();
     internal event Action? Changed;
 
@@ -33,6 +34,7 @@ internal sealed class TrafficSession : IDisposable
         cancellation.Dispose();
         cancellation = new();
         keeper?.Dispose(); keeper = null;
+        localSessions = null;
         settings = options;
         key = managementKey;
         loading = false;
@@ -62,7 +64,13 @@ internal sealed class TrafficSession : IDisposable
                 accumulator.Ingest(data.RootElement, now);
                 Snapshot = accumulator.Snapshot(now) with { SourceLabel = "Keeper · CPA全局" };
             }
-            else if (settings.UseLocalAuth) Snapshot = TrafficSnapshot.Unknown("本地认证仅查询额度，不提供最近60秒Token/请求统计");
+            else if (settings.UseLocalAuth)
+            {
+                localSessions ??= new();
+                var snapshot = await localSessions.ReadAsync(now, token);
+                if (current != version) return;
+                Snapshot = snapshot;
+            }
             else
             {
                 using var data = await new CpaTrafficSource(http, settings.ManagementUrl, key, settings.TrafficSnapshotUrl).ReadAsync(token);
@@ -75,20 +83,29 @@ internal sealed class TrafficSession : IDisposable
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
         catch (Exception error) when (error is HttpRequestException or ArgumentException or
-            System.Text.Json.JsonException or FormatException or OperationCanceledException or InvalidOperationException)
+            System.Text.Json.JsonException or FormatException or OperationCanceledException or InvalidOperationException or
+            IOException or UnauthorizedAccessException)
         {
             if (current != version) return;
-            paused = error is ArgumentException || error is HttpRequestException
-                { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound };
-            if (settings.UseKeeper && (error is FormatException or System.Text.Json.JsonException or InvalidOperationException ||
-                error is HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.TooManyRequests })) paused = true;
-            var message = settings.UseKeeper ? KeeperTrafficSource.SafeError(error) : CpaQuotaSource.SafeError(error);
-            Snapshot = TrafficSnapshot.Unknown(message);
+            HandleFailure(error);
         }
         finally
         {
             if (current == version) { loading = false; Changed?.Invoke(); }
         }
+    }
+
+    private void HandleFailure(Exception error)
+    {
+        paused = error is ArgumentException || error is HttpRequestException
+            { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound };
+        if (settings.UseKeeper && (error is FormatException or System.Text.Json.JsonException or InvalidOperationException ||
+            error is HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.TooManyRequests })) paused = true;
+        var local = settings.UseLocalAuth && !settings.UseKeeper;
+        var message = local ? "本地session统计读取失败；请检查目录权限或日志格式，不显示旧速率" :
+            settings.UseKeeper ? KeeperTrafficSource.SafeError(error) : CpaQuotaSource.SafeError(error);
+        Snapshot = TrafficSnapshot.Unknown(message) with { IsLocalSession = local,
+            SourceLabel = local ? "本地session · 本机全部会话" : "CPA全局" };
     }
 
     private static TrafficSnapshot Demo(DateTimeOffset now)

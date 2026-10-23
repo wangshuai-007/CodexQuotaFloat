@@ -20,15 +20,23 @@ Codex Hook 关联启动不属于数据源配置；开启、信任、首次消息
 
 路径留空优先使用PATH中的原生 `codex.exe app-server`，其次查找Windows Codex应用CLI位置。只执行初始化、`account/read` 和 `account/rateLimits/read`，不启动推理；CLI自行维护认证缓存。不执行codex.cmd等shell脚本。
 
-无CLI时尝试 `CODEX_HOME/auth.json` 或 `%USERPROFILE%/.codex/auth.json`。手动路径只读文件，不复制、刷新或改写令牌。API Key模式没有订阅限额，必须是ChatGPT账号登录。换号后刷新；认证过期应在Codex更新登录。本地只显示一个账号，流量需另接Keeper。
+无CLI时尝试 `CODEX_HOME/auth.json` 或 `%USERPROFILE%/.codex/auth.json`。手动路径只读文件，不复制、刷新或改写令牌。API Key模式没有订阅限额，必须是ChatGPT账号登录。换号后刷新；认证过期应在Codex更新登录。本地只显示一个账号额度。
 
 - 桌面客户端能显示额度，不代表默认CLI或所选文件使用同一份ChatGPT登录。提示API Key时，应选择实际的ChatGPT `auth.json`，不要把API Key转换或伪装成OAuth令牌；不要覆盖正在使用的CPA认证。
 - 文件模式兼容UTF8（有/无BOM）及带BOM的UTF16。认证文件解析失败、额度接口返回网页/无效JSON、CLI协议失败分别提示；不会输出文件、令牌或响应正文。
 - 官方支持文件、系统凭据库及仅进程内认证。凭据库或进程内认证不一定有可用的 `auth.json`；本工具不会读取桌面客户端进程内存或导出系统凭据。路径留空的CLI模式仍须使用有效ChatGPT登录。
-- 月周期或其他非5h/7天窗口按服务实际时长显示在账号列表/悬停详情；不折算成5h/周，也不计入双窗口水位。没有5h/7天窗口时水位保持“—”，不伪造百分比。
+- 月周期独立计入m水位，仅月账号只显示m，混合账号最多5h/7d/m；不折算成5h/周。Free缺少实际月窗口时m保持“—”，不伪造百分比。其他非标准周期仅显示详情。
 - 本地CLI及文件模式最多等待30秒；CLI超时会标明启动、账号读取或额度读取阶段。文件模式连接超时检查网络/代理；CPA查询超时不受本地设置影响。失败保留旧快照并标记，旧值不是当前额度。
 
 依据：[Codex认证](https://developers.openai.com/codex/auth/)、[App Server](https://developers.openai.com/codex/app-server/)。
+
+### 本地session流量（本地认证默认）
+
+未勾选Keeper时，读取`CODEX_HOME/sessions`，默认`%USERPROFILE%/.codex/sessions`，不依赖auth.json内容、不读取会话正文之外的凭据。手选认证文件不会改变session目录。只保留`token_count`的时间和用量数字，不上传日志。
+
+现有文件每秒在后台增量读取；每5秒发现新增或重新活跃的会话。累计用量差值去重，首条或累计重置时使用last计量；输入已含缓存、输出已含推理，不重复累计。最近60秒增量÷60秒为浮窗平均tk/s，不是逐Token输出速度；session未写入新计量时不会捏造活动。
+
+统计本机全部会话，无法按当前账号隔离；不覆盖其他设备或未落盘的云端会话。日志格式依据本机观察，不是稳定公开接口契约。初次大文件仅读取尾部4MiB，最多预热60秒才显示完整窗口；增量超限或格式/权限异常明确提示，不用部分数据冒充完整统计。没有目录/最近无计量/读取失败分别显示说明。显式勾选Keeper时继续使用Keeper，不静默混合或回退。
 
 ## Keeper
 

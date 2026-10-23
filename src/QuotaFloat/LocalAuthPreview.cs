@@ -26,7 +26,7 @@ internal static class LocalAuthPreview
         settings.Close();
         var details = new DetailWindow();
         details.Update([], false, false, false, "本地Codex登录失效；请重新登录后手动刷新", false, null, true);
-        details.SetTraffic(TrafficSnapshot.Unknown("本地认证仅查询额度，不提供最近60秒Token/请求统计"), false);
+        details.SetTraffic(TrafficSnapshot.Unknown("未找到本地Codex sessions目录") with { IsLocalSession = true }, false);
         Save((FrameworkElement)details.Content, output, "preview-local-error.png", 600, 600);
         details.Close();
         report.Add("通过：本地认证失败来源和流量不可用状态明确，不显示假额度");

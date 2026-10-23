@@ -35,7 +35,7 @@
     <TextBox x:Name="LocalAuthOption"/>
    </DockPanel>
    <TextBlock x:Name="DefaultAuthLabel" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,8,0,0"/>
-   <TextBlock Text="默认通过官方Codex CLI读取当前ChatGPT额度，支持CLI的文件/keyring认证，CLI自行维护登录缓存。手动选文件时只读auth.json，不复制或刷新令牌；未安装CLI则尝试默认文件。不经过CPA，不创建推理请求。API Key不提供订阅额度，本地认证不提供最近60秒请求流量。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/>
+   <TextBlock Text="默认通过官方Codex CLI读取当前ChatGPT额度，支持CLI的文件/keyring认证，CLI自行维护登录缓存。手动选文件时只读auth.json，不复制或刷新令牌；未安装CLI则尝试默认文件。不经过CPA，不创建推理请求。API Key不提供订阅额度。未启用Keeper时默认每秒读取本机session Token计量，按60秒平均显示，包含本机所有会话，不按当前账号隔离。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/>
   </StackPanel>
   <StackPanel x:Name="DemoSection">
   <TextBlock Text="演示账号数量（0–100；每页最多显示10个）" Margin="0,16,0,6" FontSize="14"/>

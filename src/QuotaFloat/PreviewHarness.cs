@@ -65,6 +65,7 @@ public static class PreviewHarness
         HookStatusPreview.Run(output, report);
         await WaterDisplayPreview.RunAsync(output, report);
         MonthlyWaterPreview.Run(output, report);
+        LocalTrafficPreview.Run(output, report);
         WaterDesignPreview.Run(output, report);
         await WaterPeekPreview.RunAsync(output, report);
         TrafficRatePreview.Run(output, report);

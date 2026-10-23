@@ -26,7 +26,7 @@ public sealed partial class AccountPeekWindow
         body.Children.Add(new TextBlock { Text = $"60秒平均 {snapshot.AverageTokenRateLabel} Token/s",
             FontSize = 12, Margin = new Thickness(0, 4, 0, 0), ToolTip = snapshot.AverageRateNotice });
         body.Children.Add(TrafficTrend(snapshot));
-        body.Children.Add(new TextBlock { Text = "每格 5 秒 · 左旧右新 · 已完成请求用量",
+        body.Children.Add(new TextBlock { Text = "每格 5 秒 · 左旧右新 · " + snapshot.WindowDescription,
             FontSize = 11, Foreground = Resource("Muted"), Margin = new Thickness(0, 4, 0, 0) });
         if (snapshot.Tokens == 0 && snapshot.Error is null)
             body.Children.Add(new TextBlock { Text = snapshot.AverageRateNotice, FontSize = 11,

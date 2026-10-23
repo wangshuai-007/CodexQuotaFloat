@@ -5,6 +5,20 @@ using QuotaFloat.Core;
 
 if (args.SequenceEqual(new[] { "app-server" })) { await FakeCodexServer.RunAsync(); return; }
 if (args.Contains("--check-local-auth")) { await LocalAuthLiveCheck.RunAsync(); return; }
+if (args.Contains("--check-local-traffic"))
+{
+    var watch = System.Diagnostics.Stopwatch.StartNew();
+    var source = new LocalSessionTrafficSource();
+    var snapshot = await source.ReadAsync(DateTimeOffset.UtcNow);
+    if (args.Contains("--wait"))
+    {
+        await Task.Delay(TimeSpan.FromSeconds(61));
+        snapshot = await source.ReadAsync(DateTimeOffset.UtcNow);
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new { snapshot.SourceLabel, snapshot.Tokens,
+        snapshot.AverageTokenRateLabel, snapshot.Error, elapsedMilliseconds = watch.ElapsedMilliseconds }));
+    return;
+}
 if (args.Length == 2 && args[0] == "--check-hook-status")
 {
     var status = await CodexHookInspector.CheckAsync(args[1]);
@@ -134,6 +148,7 @@ passed += await LocalAuthTests.RunAsync();
 passed += await CodexCliTests.RunAsync();
 passed += AdditionalWindowTests.Run();
 passed += MonthlyWaterTests.Run();
+passed += await LocalSessionTrafficTests.RunAsync();
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)
