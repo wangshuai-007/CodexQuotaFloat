@@ -18,7 +18,7 @@ internal static class AdditionalWindowTests
         Check("月窗口不计入双额度水位", monthly.Available(DateTimeOffset.UtcNow) is null);
         Check("月窗口包含重置时刻及明确标签", monthly.AdditionalWindows[0].Reset == DateTimeOffset.FromUnixTimeSeconds(2000000000) &&
             monthly.AdditionalWindows[0].Label == "30天（月周期）");
-        Check("其他周期不误报窗口丢失", monthly.Error?.StartsWith("服务返回其他周期额度") == true);
+        Check("月周期额度作为有效窗口而非窗口缺失", monthly.Error is null);
         using var cli = JsonDocument.Parse("""{"rateLimits":{"primary":{"usedPercent":0,"windowDurationMins":43200,"resetsAt":2000000000},"secondary":null}}""");
         var mapped = CodexCliQuotaSource.Parse(cli.RootElement, "fixture", "free");
         Check("CLI月窗口正确转换分钟为秒并显示100%", mapped.AdditionalWindows is [ { Seconds: 2592000, Remaining: 100 } ]);

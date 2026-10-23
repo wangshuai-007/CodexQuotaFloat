@@ -7,12 +7,13 @@ public sealed record AccountQuota(
     DateTimeOffset? FiveHourReset, DateTimeOffset? WeeklyReset,
     string? Error = null)
 {
-    /// <summary>服务返回的非5h/7天窗口；仅供详情，不折算或计入双窗口水位。</summary>
+    /// <summary>服务返回的非5h/7天窗口；月窗口独立计入m水位，不折算成5h/7天。</summary>
     public IReadOnlyList<AdditionalQuotaWindow> AdditionalWindows { get; init; } = [];
 
     /// <summary>额度是否已过窗口重置时间；到期数据不能假装是新窗口。</summary>
     public bool IsExpired(DateTimeOffset now) =>
-        FiveHourReset is { } five && five <= now || WeeklyReset is { } week && week <= now;
+        FiveHourReset is { } five && five <= now || WeeklyReset is { } week && week <= now ||
+        AdditionalWindows.Any(window => window.IsMonthly && window.Reset <= now);
 
     /// <summary>返回双窗口的可用下限；未知、失败或到期时不计入水位。</summary>
     public double? Available(DateTimeOffset now) =>

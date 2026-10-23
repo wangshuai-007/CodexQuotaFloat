@@ -21,7 +21,7 @@
    <ComboBoxItem Content="7天 剩余额度"/>
    <ComboBoxItem Content="左右双水位（左5h · 右7天）"/>
   </ComboBox>
-  <TextBlock Text="按全部有效账号等权平均；双水位独立计算，不是Token绝对总量。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+  <TextBlock Text="各周期按有效账号等权平均；有月额度时自动增加 m 水位，仅月账号只显示 m，最多显示5h/7d/m三列；不是Token总量。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
   <TextBlock Text="数据源" Margin="0,20,0,8" FontWeight="SemiBold"/>
   <ComboBox x:Name="SourceOption" Height="38" SelectionChanged="SourceChanged">
    <ComboBoxItem Content="演示数据（不访问网络）"/>

@@ -26,6 +26,7 @@ public static class CpaParser
                 Remaining(item.Value), Reset(item.Value))).ToArray();
         return new AccountQuota(id, name, Text(usage, "plan_type") ?? plan,
             fiveRemaining, weekRemaining, Reset(five), Reset(week),
+            additional.Any(window => window.IsMonthly && window.Remaining is not null) ? null :
             fiveRemaining is null || weekRemaining is null ? additional.Length > 0 ?
                 "服务返回其他周期额度 · 不计入5h/7天水位" : "额度窗口缺失 · 不计入水位" : null)
             { AdditionalWindows = additional };

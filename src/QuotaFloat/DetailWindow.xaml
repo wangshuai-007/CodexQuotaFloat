@@ -57,7 +57,7 @@
     <Grid>
      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
      <StackPanel>
-      <TextBlock Text="蓝 5h剩余 · 绿 周剩余 · 橙 7天已走过时间" FontSize="12" Foreground="{StaticResource Muted}"/>
+      <TextBlock Text="蓝 5h剩余 · 绿 周剩余 · 橙 月剩余 / 7天时间线" FontSize="12" Foreground="{StaticResource Muted}"/>
       <TextBlock Text="水位 = 对应窗口有效账号的等权平均，非 Token 总量" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
      </StackPanel>
      <Button Grid.Column="1" x:Name="RefreshButton" Content="刷新" ToolTip="刷新额度 · F5" Click="RefreshClicked" Margin="12,0,0,0"/>

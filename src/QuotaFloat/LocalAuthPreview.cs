@@ -35,8 +35,8 @@ internal static class LocalAuthPreview
 
     private static void MonthlyPreview(string output, List<string> report)
     {
-        var account = new AccountQuota("fixture-monthly", "monthly@demo.local", "Free", null, null, null, null,
-            "服务返回其他周期额度 · 不计入5h/7天水位") { AdditionalWindows = [new(2592000, 100, DateTimeOffset.Now.AddDays(30))] };
+        var account = new AccountQuota("fixture-monthly", "monthly@demo.local", "Free", null, null, null, null)
+            { AdditionalWindows = [new(2592000, 100, DateTimeOffset.Now.AddDays(30))] };
         var row = new AccountRow(account, 1, DateTimeOffset.Now);
         Save(row, output, "preview-monthly-row.png", 580, 220);
         var peek = new AccountPeekWindow();

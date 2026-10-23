@@ -103,6 +103,8 @@ public sealed partial class QuotaGauge : FrameworkElement
             if (highlight && index == Viewport.Selected)
                 dc.DrawRoundedRectangle(BrushOf("#DBECE8"), new Pen(BrushOf("#89A9AE"), 0.6),
                     new Rect(6, y - 6, 25, 12), 3, 3);
+            if (WaterColumns.HasMonth(account) && account.FiveHourRemaining is null && account.WeeklyRemaining is null)
+            { Meter(dc, WaterColumns.MonthlyRemaining(account, now), Cycle, y); continue; }
             Meter(dc, account.FiveHourRemaining, Five, y - 3.5);
             Meter(dc, account.WeeklyRemaining, Week, y);
             Meter(dc, QuotaMath.WeekElapsed(account.WeeklyReset, now), Cycle, y + 3.5);

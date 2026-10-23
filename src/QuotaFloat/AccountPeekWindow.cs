@@ -65,7 +65,7 @@ public sealed partial class AccountPeekWindow : Window
                 account.WeeklyReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "周期未知");
         }
         foreach (var window in account.AdditionalWindows)
-            Metric(window.Seconds == 2592000 ? "月剩余" : window.Label, window.Remaining, "Five", window.Reset is { } reset ?
+            Metric(window.IsMonthly ? "月剩余" : window.Label, window.Remaining, window.IsMonthly ? "Cycle" : "Five", window.Reset is { } reset ?
                 $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "重置时间未知");
     }
 

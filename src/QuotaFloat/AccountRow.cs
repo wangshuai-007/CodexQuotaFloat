@@ -79,11 +79,13 @@ public sealed class AccountRow : Border
         {
             var window = account.AdditionalWindows[i];
             var time = window.Reset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm} · {QuotaMath.Countdown(reset, now)}" : "重置时间未知";
-            AddMetric(metrics, i, window.Label + " 剩余", window.Remaining, "Five", time);
+            AddMetric(metrics, i, window.Label + " 剩余", window.Remaining, window.IsMonthly ? "Cycle" : "Five", time);
         }
         stack.Children.Add(metrics);
         if (account.FiveHourRemaining is null && account.WeeklyRemaining is null)
-            stack.Children.Add(new TextBlock { Text = "实际周期额度 · 不计入5h/7天水位", Foreground = Resource("Muted"),
+            stack.Children.Add(new TextBlock { Text = account.Error ?? (account.IsExpired(now) ? "窗口已到期 · 待刷新" :
+                account.AdditionalWindows.Any(window => window.IsMonthly) ? "月额度独立计入 m 水位" : "实际周期额度 · 不计入5h/7天水位"),
+                Foreground = Resource(account.Error is not null || account.IsExpired(now) ? "Danger" : "Muted"),
                 FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(32, 8, 0, 0) });
     }
 
