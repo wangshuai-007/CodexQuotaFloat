@@ -24,8 +24,10 @@ internal static class ClientAttachment
         // HWND_NOTOPMOST对本来就非置顶的窗口不重排；HWND_TOP才会恢复普通窗口组顶端。
         if (preceding != IntPtr.Zero && (GetWindowLong(preceding, -20) & 8) != 0) preceding = IntPtr.Zero;
         var window = new WindowInteropHelper(floating).Handle;
-        if (!SetWindowPos(window, preceding, 0, 0, 0, 0, 0x0213)) return false;
-        return IsAbove(window, client) || RecoverLayer(window, client, preceding);
+        // 坐标附着已成功；后台层级调整可能暂时失败，交给下一次轮询重试，不能回到独立屏幕位置。
+        if (!SetWindowPos(window, preceding, 0, 0, 0, 0, 0x0213) || !IsAbove(window, client))
+            RecoverLayer(window, client, preceding);
+        return true;
     }
 
     internal static bool KeepInteractionLayer(bool interacting, IntPtr foreground, IntPtr client,
