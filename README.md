@@ -141,3 +141,5 @@ Start-Process -FilePath "release/CodexQuotaFloat.exe" -ArgumentList '--smoke-tes
 设置位于 `%LOCALAPPDATA%/CodexQuotaFloat/settings.json`，含界面选项、服务地址、可选认证路径和排序账号ID，不含密码、OAuth令牌或额度快照。分享日志前检查账号标识、地址和本机路径，不提交auth.json、.env或真实配置。
 
 本项目不是OpenAI官方产品，与CPA和Keeper独立维护。
+
+边框橙色环表示总体重置周期已走过时间，从顶部顺时针前进。普通账号按7天、仅月窗口按实际月周期，已知且无错误的账号等权平均；未知或旧快照不绘制进度，到期保持100%。顶部悬停显示百分比，内部水位仍表示剩余额度。

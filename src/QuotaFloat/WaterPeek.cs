@@ -23,6 +23,9 @@ public sealed partial class AccountPeekWindow
         foreach (var column in WaterColumns.Build(values, now, QuotaDisplayMode.Split))
             Metric(column.Label, column.Remaining, column.Id == "m" ? "Cycle" : column.Id == "7d" ? "Week" : "Five",
                 column.Id == "m" && column.NextReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : $"{column.AccountCount} 个有效账号");
+        var cycle = ResetCycleProgress.Calculate(values, now);
+        body.Children.Add(new TextBlock { Text = cycle is { } elapsed ? $"边框时间进度 {elapsed:0}% · 周/月周期等权平均" : "边框时间进度未知",
+            FontSize = 11, Foreground = Resource("Cycle"), TextWrapping = TextWrapping.Wrap });
         body.Children.Add(new TextBlock { Text = error ?? "各周期独立汇总 · 不计入失效或未知窗口",
             FontSize = 11, Foreground = Resource(error is null ? "Muted" : "Danger"),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) });

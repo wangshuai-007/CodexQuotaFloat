@@ -149,6 +149,12 @@ passed += await CodexCliTests.RunAsync();
 passed += AdditionalWindowTests.Run();
 passed += MonthlyWaterTests.Run();
 passed += await LocalSessionTrafficTests.RunAsync();
+Near("边框周周期中点", ResetCycleProgress.Calculate([Item(90, 80) with { WeeklyReset = now.AddDays(3.5) }], now), 50);
+Near("边框月周期中点", ResetCycleProgress.Calculate([new AccountQuota("m", "demo", "Free", null, null, null, null)
+    { AdditionalWindows = [new(2592000, 80, now.AddDays(15))] }], now), 50);
+Near("边框周期到期保持100", ResetCycleProgress.Calculate([Item(80, 80) with { WeeklyReset = now }], now), 100);
+Check("边框未知不伪造时间", ResetCycleProgress.Calculate([], now) is null);
+Check("边框失败不参与汇总", ResetCycleProgress.Calculate([Item(80, 80) with { Error = "失败" }], now) is null);
 Console.WriteLine($"全部 {passed} 项验证通过。");
 
 static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

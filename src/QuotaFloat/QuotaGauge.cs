@@ -90,6 +90,7 @@ public sealed partial class QuotaGauge : FrameworkElement
         DrawTraffic(dc);
         dc.DrawRoundedRectangle(Muted, null, new Rect(11, 270, 10, 2), 1, 1);
         dc.Pop();
+        DrawCycleProgress(dc);
         if (IsKeyboardFocused) dc.DrawRoundedRectangle(null, new Pen(Five, 1.5), new Rect(0.5, 0.5, 31, 279), 15, 15);
     }
 
