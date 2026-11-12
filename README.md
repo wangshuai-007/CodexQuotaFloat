@@ -126,7 +126,7 @@ dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
 
 普通Build后完整输出自动复制到 `release/`。本地构建脚本只结束本项目占用文件的测试程序，构建与哈希校验成功后重启；失败不启动不完整版本。发布打包用独立暂存目录，不覆盖本地测试程序。
 
-生成两个ZIP、SHA256及发布说明，位于 `artifacts/github-release/0.1.0/`。自包含发布不裁剪WPF运行时，不是单文件EXE。标签推送触发GitHub Release草稿，手动运行仅生成Actions产物，详见 [发布流程](docs/publishing.md)。
+生成两个ZIP、SHA256及发布说明，位于 `artifacts/github-release/0.1.0/`。自包含发布不裁剪WPF运行时，不是单文件EXE。标签推送在校验与上传成功后自动发布GitHub Release（正式版设为Latest，预发布版不设）；手动运行仅生成Actions产物，详见 [发布流程](docs/publishing.md)。
 
 ## 测试与截图
 

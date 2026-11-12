@@ -38,6 +38,8 @@ jobs:
           $output = Join-Path $PWD 'artifacts/ci-preview'
           Start-Process -FilePath "release/CodexQuotaFloat.exe" -ArgumentList "--render-preview `"$output`"" -WindowStyle Hidden -Wait
           if (-not (Test-Path -LiteralPath "$output/ui-checks.txt") -or (Test-Path -LiteralPath "$output/preview-error.txt")) { throw '界面检查失败' }
+      - name: 离线验证发布策略
+        run: '& "scripts/test-release-workflow.ps1"'
       - name: 安装Inno Setup编译器
         run: |
           $ErrorActionPreference = 'Stop'
@@ -72,8 +74,8 @@ jobs:
           path: artifacts/github-release/*/*
           if-no-files-found: error
           retention-days: 30
-  draft-release:
-    if: startsWith(github.ref, 'refs/tags/v')
+  publish-release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: windows-latest
     permissions:
@@ -83,12 +85,15 @@ jobs:
         with:
           name: Windows-Release
           path: assets
-      - name: 创建或更新Release草稿
+      - name: 上传完整产物后发布Release并设置Latest
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$') { throw '发布标签格式不兼容' }
+          $prerelease = $env:GITHUB_REF_NAME.Contains('-')
           $assets = Get-ChildItem -LiteralPath 'assets' -File -Recurse
           $notes = @($assets | Where-Object Name -eq 'release-notes.md')
           if ($notes.Count -ne 1) { throw '发布说明缺失或重复' }
@@ -103,4 +108,10 @@ jobs:
           }
           $paths = @($assets | ForEach-Object FullName)
           gh release upload "$env:GITHUB_REF_NAME" @paths --clobber
-          if ($LASTEXITCODE -ne 0) { throw '上传Release产物失败' }
+          if ($LASTEXITCODE -ne 0) { throw '上传Release产物失败，保留草稿，不发布' }
+          if ($prerelease) {
+            gh release edit "$env:GITHUB_REF_NAME" --draft=false --prerelease --latest=false
+          } else {
+            gh release edit "$env:GITHUB_REF_NAME" --draft=false --prerelease=false --latest
+          }
+          if ($LASTEXITCODE -ne 0) { throw '正式发布Release失败，请检查草稿状态' }
