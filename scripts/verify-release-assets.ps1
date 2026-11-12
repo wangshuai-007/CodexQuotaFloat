@@ -5,13 +5,14 @@ $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $assets = Join-Path $root "artifacts/github-release/$Version"
 $verification = Join-Path $root ('artifacts/package-check/' + [Guid]::NewGuid().ToString('N'))
 $lines = @(Get-Content -LiteralPath (Join-Path $assets 'SHA256SUMS.txt'))
-if ($lines.Count -ne 2) { throw '发布包校验数量不是2。' }
+if ($lines.Count -ne 3) { throw '发布包校验数量不是3。' }
 foreach ($line in $lines) {
-    if ($line -notmatch '^([a-f0-9]{64})  (CodexQuotaFloat-[A-Za-z0-9.-]+\.zip)$') { throw '校验文件格式错误。' }
+    if ($line -notmatch '^([a-f0-9]{64})  (CodexQuotaFloat-[A-Za-z0-9.-]+\.(?:zip|exe))$') { throw '校验文件格式错误。' }
     $expected = $Matches[1]
     $name = $Matches[2]
     $archive = Join-Path $assets $name
     if ((Get-FileHash -LiteralPath "$archive" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw "哈希不一致：$name" }
+    if ($name.EndsWith('-setup.exe')) { Write-Host "通过：安装包SHA256一致"; continue }
     $target = Join-Path $verification ([System.IO.Path]::GetFileNameWithoutExtension($name))
     Expand-Archive -LiteralPath "$archive" -DestinationPath "$target"
     $folders = @(Get-ChildItem -LiteralPath "$target" -Directory)

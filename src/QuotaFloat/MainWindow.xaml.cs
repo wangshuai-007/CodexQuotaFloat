@@ -44,6 +44,7 @@ public partial class MainWindow : Window
         WireDetails();
         Gauge.InvokeRequested += () => { pinned = true; Expand(true); };
         WireMenu();
+        Loaded += async (_, _) => await CheckStartupUpdateAsync();
         WireClientFollow();
         WireTimers();
         if (persist) WireTray();
@@ -118,6 +119,9 @@ public partial class MainWindow : Window
         refresh.Click += async (_, _) => await RefreshAll(true);
         var configure = new MenuItem { Header = "设置    Ctrl+," };
         configure.Click += (_, _) => OpenSettings();
+        var aboutItem = new MenuItem { Header = "关于与更新" };
+        aboutItem.Click += (_, _) => OpenAbout();
+        menu.Items.Add(aboutItem);
         var quit = new MenuItem { Header = "退出浮窗" };
         quit.Click += (_, _) => Close();
         foreach (var item in new object[] { detail, top, dock, refresh, configure, new Separator(), quit }) menu.Items.Add(item);
@@ -138,6 +142,7 @@ public partial class MainWindow : Window
         var trayMenu = new System.Windows.Forms.ContextMenuStrip();
         trayMenu.Items.Add("显示浮窗", null, (_, _) => Dispatcher.Invoke(() => ShowFromTray()));
         trayMenu.Items.Add("设置", null, (_, _) => Dispatcher.Invoke(OpenSettings));
+        trayMenu.Items.Add("关于与更新", null, (_, _) => Dispatcher.Invoke(OpenAbout));
         trayMenu.Items.Add("退出", null, (_, _) => Dispatcher.Invoke(Close));
         tray.ContextMenuStrip = trayMenu;
     }

@@ -148,6 +148,7 @@ passed += await LocalAuthTests.RunAsync();
 passed += await CodexCliTests.RunAsync();
 passed += AdditionalWindowTests.Run();
 passed += MonthlyWaterTests.Run();
+passed += await UpdateTests.RunAsync();
 passed += await LocalSessionTrafficTests.RunAsync();
 Near("边框周周期中点", ResetCycleProgress.Calculate([Item(90, 80) with { WeeklyReset = now.AddDays(3.5) }], now), 50);
 Near("边框月周期中点", ResetCycleProgress.Calculate([new AccountQuota("m", "demo", "Free", null, null, null, null)

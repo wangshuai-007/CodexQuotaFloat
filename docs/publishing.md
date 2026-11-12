@@ -39,3 +39,10 @@ dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
 - [ ] 核验草稿后正式发布。
 
 依据：[微软.NET部署方式](https://learn.microsoft.com/en-us/dotnet/core/deploying/)、[GitHub发布管理](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)。
+## 当前用户安装包与自动更新（1.1.0起）
+
+发布前安装Inno Setup 6编译器（ISCC.exe）；脚本检查PATH、Program Files及当前用户Programs目录。自包含输出同时编译EXE安装向导，SHA256SUMS同时包含两个ZIP与setup.exe。固定AppId用于升级，禁止每版本更换。
+
+上传正式Release时需包含 `CodexQuotaFloat-<版本>-win-x64-setup.exe`；版本标签必须为`v主.次.修订`。只有公开正式版参与更新，草稿和预览版不参与；GitHub API需返回安装资产的`digest: sha256:...`，否则程序拒绝自动下载。工作流仍只创建草稿，需维护者检查后手动发布。统一通过Version参数生成程序集和安装包版本。
+
+打包验证不等于真实安装验证；正式发布前请人工验收首次安装、覆盖升级、关闭占用、取消安装、卸载及设置保留，并确认Hook路径迁移审核。

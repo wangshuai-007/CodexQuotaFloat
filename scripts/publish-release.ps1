@@ -39,6 +39,10 @@ foreach ($kind in @('self-contained', 'framework-dependent')) {
     $archive = Join-Path $assets "$name.zip"
     Compress-Archive -LiteralPath "$folder" -DestinationPath "$archive" -Force
     $archives += $archive
+    if ($kind -eq 'self-contained') {
+        & (Join-Path $PSScriptRoot 'build-installer.ps1') -Version $Version -SourceDir $folder -OutputDir $assets
+        $archives += (Join-Path $assets "CodexQuotaFloat-$Version-win-x64-setup.exe")
+    }
 }
 
 $hashes = $archives | ForEach-Object {

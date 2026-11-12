@@ -1,0 +1,43 @@
+{
+  "updatedAt": "2026-11-12T02:13:10.859Z",
+  "version": 2,
+  "source": "manual",
+  "originCommand": "",
+  "qaMode": "standard",
+  "qaFocus": [
+    "更新来源与SHA256",
+    "用户确认与取消",
+    "发布包与版本一致"
+  ],
+  "ui": {
+    "required": true,
+    "designContract": true,
+    "sourcePriority": [
+      "plan.md",
+      ".helloagents/DESIGN.md"
+    ],
+    "styleAdvisor": {
+      "required": false,
+      "reason": "",
+      "focus": []
+    },
+    "visualValidation": {
+      "required": true,
+      "reason": "新增关于对话框",
+      "screens": [
+        "about"
+      ],
+      "states": [
+        "idle",
+        "error",
+        "available"
+      ]
+    }
+  },
+  "advisor": {
+    "required": false,
+    "reason": "",
+    "focus": [],
+    "preferredSources": []
+  }
+}
