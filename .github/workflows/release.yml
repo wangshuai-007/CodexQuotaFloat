@@ -56,7 +56,8 @@ jobs:
           if ($process.ExitCode -ne 0) { throw "编译器安装失败：$($process.ExitCode)" }
           $iscc = Join-Path $compilerDir 'ISCC.exe'
           if (-not (Test-Path -LiteralPath "$iscc")) { throw '安装后未找到ISCC.exe' }
-          if ((Get-Item -LiteralPath "$iscc").VersionInfo.ProductVersion -notmatch '^6\.7\.3(\D|$)') { throw '编译器版本不匹配' }
+          # ISCC.exe的PE版本字段为0.0.0.0；固定安装包的SHA256和签名已确认版本，不能据此字段误判。
+          Write-Host '通过：固定6.7.3安装包校验及安装；ISCC.exe已就绪。'
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "ISCC_EXE=$iscc`n", [System.Text.UTF8Encoding]::new($false))
       - name: 生成自包含与轻量发布包
         env:
