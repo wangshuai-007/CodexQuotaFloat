@@ -30,7 +30,7 @@ public sealed class GitHubUpdates : IDisposable
         if (version <= current) return null;
         var name = $"CodexQuotaFloat-{plain}-win-x64-setup.exe";
         var assets = root.GetProperty("assets").EnumerateArray().Where(a => a.GetProperty("name").GetString() == name).ToArray();
-        if (assets.Length != 1) throw new FormatException("新版尚未提供兼容的安装包");
+        if (assets.Length != 1) throw new UpdateCheckFailure("新版尚未提供兼容的安装包，请到GitHub Release查看。");
         var asset = assets[0];
         var url = new Uri(asset.GetProperty("browser_download_url").GetString()!);
         var expected = Repository + "/releases/download/" + tag + "/" + name;
@@ -44,9 +44,12 @@ public sealed class GitHubUpdates : IDisposable
     /// <summary>查询固定公开仓库最新正式发布；不需要令牌，不上传本地配置。</summary>
     public async Task<UpdateRelease?> CheckAsync(Version current, CancellationToken token)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(15));
+        token = timeout.Token;
         using var response = await client.GetAsync("https://api.github.com/repos/wangshuai-007/CodexQuotaFloat/releases/latest",
             HttpCompletionOption.ResponseHeadersRead, token);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode) throw UpdateCheckFailure.FromResponse(response);
         await using var stream = await response.Content.ReadAsStreamAsync(token);
         using var buffer = new MemoryStream();
         await CopyLimitedAsync(stream, buffer, 1024 * 1024, null, token);

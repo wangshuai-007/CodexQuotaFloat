@@ -54,7 +54,36 @@ internal static class UpdateTests
         using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
         try { await client.DownloadAsync(release, null, cancelled.Token); Check("支持取消下载", false); }
         catch (OperationCanceledException) { Check("支持取消下载", true); }
+        passed += await CheckErrorsAsync();
         return passed;
+    }
+
+    private static async Task<int> CheckErrorsAsync()
+    {
+        var cases = new[] { (HttpStatusCode.Forbidden, true, "次数已用尽"),
+            (HttpStatusCode.Forbidden, false, "访问权限"), (HttpStatusCode.NotFound, false, "正式Release"),
+            ((HttpStatusCode)429, false, "次数已用尽") };
+        foreach (var (code, limited, expected) in cases)
+        {
+            using var client = new GitHubUpdates(new Handler(_ =>
+            {
+                var response = new HttpResponseMessage(code);
+                if (limited) response.Headers.Add("X-RateLimit-Remaining", "0");
+                response.Headers.Add("X-RateLimit-Reset", "1794448800");
+                return response;
+            }));
+            try { await client.CheckAsync(new Version(1, 1, 0), default); throw new InvalidOperationException("错误被吞掉"); }
+            catch (UpdateCheckFailure error)
+            {
+                if (!UpdateCheckFailure.Describe(error).Contains(expected))
+                    throw new InvalidOperationException("更新错误原因不明确");
+                Console.WriteLine("通过：更新错误明确区分 " + (int)code + " / " + expected);
+            }
+        }
+        if (!UpdateCheckFailure.Describe(new HttpRequestException()).Contains("网络") ||
+            !UpdateCheckFailure.Describe(new OperationCanceledException()).Contains("超时"))
+            throw new InvalidOperationException("网络或超时错误未区分");
+        return cases.Length + 1;
     }
 
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> action) : HttpMessageHandler

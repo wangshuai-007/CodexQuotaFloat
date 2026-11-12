@@ -59,7 +59,7 @@ public sealed class AboutWindow : Window
     {
         check.IsEnabled = install.IsEnabled = false; status.Text = "正在检查GitHub Release…";
         try { SetRelease(await updates.CheckAsync(CurrentVersion, cancellation.Token)); }
-        catch (Exception e) when (Handled(e)) { status.Text = "检查失败：网络不可用、GitHub限流或发布包不兼容。可前往GitHub查看。"; }
+        catch (Exception e) when (Handled(e)) { status.Text = UpdateCheckFailure.Describe(e); }
         finally { check.IsEnabled = true; }
     }
 
@@ -82,7 +82,7 @@ public sealed class AboutWindow : Window
         finally { check.IsEnabled = true; install.IsEnabled = release is not null; }
     }
 
-    private static bool Handled(Exception e) => e is System.Net.Http.HttpRequestException or IOException or
+    private static bool Handled(Exception e) => e is UpdateCheckFailure or System.Net.Http.HttpRequestException or IOException or
         UnauthorizedAccessException or FormatException or System.Text.Json.JsonException or OperationCanceledException or
         InvalidOperationException or System.ComponentModel.Win32Exception or KeyNotFoundException;
 }
