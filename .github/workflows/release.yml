@@ -39,7 +39,25 @@ jobs:
           Start-Process -FilePath "release/CodexQuotaFloat.exe" -ArgumentList "--render-preview `"$output`"" -WindowStyle Hidden -Wait
           if (-not (Test-Path -LiteralPath "$output/ui-checks.txt") -or (Test-Path -LiteralPath "$output/preview-error.txt")) { throw '界面检查失败' }
       - name: 安装Inno Setup编译器
-        run: choco install innosetup --version=6.7.3 --no-progress -y
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw '仅允许GitHub托管runner准备编译器' }
+          $url = 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe'
+          $expected = '9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732'
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          $compilerDir = Join-Path $env:RUNNER_TEMP 'inno-setup-6.7.3'
+          Invoke-WebRequest -Uri $url -OutFile "$installer" -TimeoutSec 180
+          if ((Get-FileHash -LiteralPath "$installer" -Algorithm SHA256).Hash -ne $expected) { throw '编译器安装包SHA256不匹配' }
+          $signature = Get-AuthenticodeSignature -LiteralPath "$installer"
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Pyrsys B\.V\.(,|$)') { throw '编译器安装包签名无效或发布者不匹配' }
+          $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/SP-', '/NOICONS', "/DIR=`"$compilerDir`"")
+          $process = Start-Process -FilePath "$installer" -ArgumentList $arguments -WindowStyle Hidden -PassThru
+          if (-not $process.WaitForExit(120000)) { Stop-Process -Id $process.Id; throw '编译器安装超时' }
+          if ($process.ExitCode -ne 0) { throw "编译器安装失败：$($process.ExitCode)" }
+          $iscc = Join-Path $compilerDir 'ISCC.exe'
+          if (-not (Test-Path -LiteralPath "$iscc")) { throw '安装后未找到ISCC.exe' }
+          if ((Get-Item -LiteralPath "$iscc").VersionInfo.ProductVersion -notmatch '^6\.7\.3(\D|$)') { throw '编译器版本不匹配' }
+          [System.IO.File]::AppendAllText($env:GITHUB_ENV, "ISCC_EXE=$iscc`n", [System.Text.UTF8Encoding]::new($false))
       - name: 生成自包含与轻量发布包
         env:
           INPUT_VERSION: ${{ inputs.version }}

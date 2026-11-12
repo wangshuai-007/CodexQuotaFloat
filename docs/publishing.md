@@ -41,7 +41,7 @@ dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
 依据：[微软.NET部署方式](https://learn.microsoft.com/en-us/dotnet/core/deploying/)、[GitHub发布管理](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)。
 ## 当前用户安装包与自动更新（1.1.0起）
 
-发布前安装Inno Setup 6编译器（ISCC.exe）；脚本检查PATH、Program Files及当前用户Programs目录。自包含输出同时编译EXE安装向导，SHA256SUMS同时包含两个ZIP与setup.exe。固定AppId用于升级，禁止每版本更换。
+仅GitHub托管runner会在工作流内从官方GitHub固定Release下载6.7.3，验证固定SHA256及Pyrsys B.V.有效签名后安装到runner临时目录，通过`ISCC_EXE`传给打包脚本。不依赖Chocolatey，也不提供或在本机运行编译器安装脚本。本地打包只使用已手动安装的编译器，支持`ISCC_EXE`、PATH、Program Files及当前用户Programs目录。旧标签任务重跑仍使用旧工作流，需从包含本修复的新提交手动运行Actions，或创建新版本标签；不自动移动已有标签。自包含输出同时编译EXE安装向导，SHA256SUMS同时包含两个ZIP与setup.exe。固定AppId用于升级，禁止每版本更换。
 
 上传正式Release时需包含 `CodexQuotaFloat-<版本>-win-x64-setup.exe`；版本标签必须为`v主.次.修订`。只有公开正式版参与更新，草稿和预览版不参与；GitHub API需返回安装资产的`digest: sha256:...`，否则程序拒绝自动下载。工作流仍只创建草稿，需维护者检查后手动发布。统一通过Version参数生成程序集和安装包版本。
 
