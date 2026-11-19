@@ -9,10 +9,17 @@ public static class ResetCycleProgress
         var values = accounts.Where(a => a.Error is null).Select(a =>
         {
             if (a.WeeklyReset is { } week) return QuotaMath.WeekElapsed(week, now);
-            var months = a.AdditionalWindows.Where(w => w.IsMonthly).Take(2).ToArray();
-            return months.Length == 1 && months[0].Reset is { } reset
-                ? Math.Clamp(100 * (1 - (reset - now).TotalSeconds / months[0].Seconds), 0, 100) : (double?)null;
+            return MonthElapsed(a, now);
         }).OfType<double>().ToArray();
         return values.Length == 0 ? null : values.Average();
+    }
+
+    /// <summary>账号月周期已过去的百分比；没有唯一有效重置时间时未知。</summary>
+    public static double? MonthElapsed(AccountQuota account, DateTimeOffset now)
+    {
+        if (account.Error is not null) return null;
+        var months = account.AdditionalWindows.Where(w => w.IsMonthly).Take(2).ToArray();
+        return months.Length == 1 && months[0].Reset is { } reset
+            ? Math.Clamp(100 * (1 - (reset - now).TotalSeconds / months[0].Seconds), 0, 100) : null;
     }
 }

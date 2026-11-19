@@ -46,7 +46,7 @@ public sealed partial class AccountPeekWindow : Window
         body.Children.Add(new TextBlock { Text = $"{account?.Plan ?? "Codex"} · {(demo ? "演示" : local ? "本地Codex" : "CPA")} · {Math.Max(0, index + 1)}/{total}",
             FontSize = 11, Foreground = Resource("Muted"), Margin = new Thickness(0, 3, 0, 9) });
         if (account is not null)
-            AccountMetrics(account);
+            AccountMetrics(account, error is not null);
         var warning = error ?? account?.Error ?? (account?.IsExpired(DateTimeOffset.Now) == true ? "窗口到期 · 待刷新" : null);
         body.Children.Add(new TextBlock { Text = warning ?? (loading ? "正在读取额度…" : "上下移动 / 滚轮切换 · 点击浮窗查看全部"),
             FontSize = 11, Foreground = Resource(warning is null || error is null &&
@@ -54,10 +54,11 @@ public sealed partial class AccountPeekWindow : Window
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) });
     }
 
-    private void AccountMetrics(AccountQuota account)
+    private void AccountMetrics(AccountQuota account, bool stale)
     {
         var now = DateTimeOffset.Now;
-        if (account.FiveHourRemaining is not null || account.WeeklyRemaining is not null || account.AdditionalWindows.Count == 0)
+        if (account.FiveHourRemaining is not null || account.WeeklyRemaining is not null ||
+            (account.AdditionalWindows.Count == 0 && !WaterColumns.HasMonth(account)))
         {
             Metric("5h 剩余", account.FiveHourRemaining, "Five", QuotaMath.Countdown(account.FiveHourReset, now));
             Metric("周剩余", account.WeeklyRemaining, "Week", QuotaMath.Countdown(account.WeeklyReset, now));
@@ -65,8 +66,14 @@ public sealed partial class AccountPeekWindow : Window
                 account.WeeklyReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "周期未知");
         }
         foreach (var window in account.AdditionalWindows)
-            Metric(window.IsMonthly ? "月剩余" : window.Label, window.Remaining, window.IsMonthly ? "Cycle" : "Five", window.Reset is { } reset ?
+            Metric(window.IsMonthly ? "月剩余" : window.Label, window.Remaining, window.IsMonthly ? "Month" : "Five", window.Reset is { } reset ?
                 $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : "重置时间未知");
+        if (WaterColumns.HasMonth(account))
+        {
+            if (!account.AdditionalWindows.Any(window => window.IsMonthly))
+                Metric("月剩余", null, "Month", "月窗口未知");
+            Metric("月已过时间", stale ? null : ResetCycleProgress.MonthElapsed(account, now), "Cycle", "按月额度重置周期");
+        }
     }
 
     private void Metric(string label, double? value, string color, string time)

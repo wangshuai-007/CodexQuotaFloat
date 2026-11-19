@@ -21,7 +21,7 @@ public sealed partial class QuotaGauge
     internal IReadOnlyList<WaterColumn> VisibleWaterColumns => waterColumns;
     private static readonly Brush WaterFiveInk = BrushOf("#206A9D");
     private static readonly Brush WaterWeekInk = BrushOf("#116C55");
-    private static readonly Brush WaterMonthInk = BrushOf("#995019");
+    private static Brush WaterMonthInk => (Brush)Application.Current.FindResource("Month");
 
     private void UpdateWater(IReadOnlyList<AccountQuota> values, DateTimeOffset time, bool animate)
     {
@@ -91,8 +91,8 @@ public sealed partial class QuotaGauge
             path.LineTo(new Point(left, 281), true, false);
         }
         dc.PushClip(new RectangleGeometry(new Rect(left, 42, width, 239)));
-        dc.DrawGeometry(new LinearGradientBrush(ColorOf(id == "m" ? "#F4DDC2" : id == "7d" ? "#C5E8D9" : "#C1E4F3"),
-            ColorOf(id == "m" ? "#D5A06B" : id == "7d" ? "#6AB899" : "#78ADD1"), 90) { Opacity = stale ? 0.28 : 0.8 }, null, water);
+        dc.DrawGeometry(new LinearGradientBrush(ColorOf(id == "m" ? "#E9D9F0" : id == "7d" ? "#C5E8D9" : "#C1E4F3"),
+            ColorOf(id == "m" ? "#B888CD" : id == "7d" ? "#6AB899" : "#78ADD1"), 90) { Opacity = stale ? 0.28 : 0.8 }, null, water);
         DrawWaterSurface(dc, left, width, y, id);
         dc.Pop();
     }

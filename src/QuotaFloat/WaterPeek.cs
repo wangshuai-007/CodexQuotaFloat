@@ -21,8 +21,14 @@ public sealed partial class AccountPeekWindow
         body.Children.Add(new TextBlock { Text = source + " · 有效账号等权平均", FontSize = 11,
             Foreground = Resource("Muted"), Margin = new Thickness(0, 3, 0, 9) });
         foreach (var column in WaterColumns.Build(values, now, QuotaDisplayMode.Split))
-            Metric(column.Label, column.Remaining, column.Id == "m" ? "Cycle" : column.Id == "7d" ? "Week" : "Five",
+            Metric(column.Label, column.Remaining, column.Id == "m" ? "Month" : column.Id == "7d" ? "Week" : "Five",
                 column.Id == "m" && column.NextReset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm}" : $"{column.AccountCount} 个有效账号");
+        if (values.Any(WaterColumns.HasMonth))
+        {
+            var months = values.Select(account => ResetCycleProgress.MonthElapsed(account, now)).OfType<double>().ToArray();
+            Metric("月已过时间", error is null && months.Length > 0 ? months.Average() : null, "Cycle",
+                months.Length > 0 && error is null ? $"{months.Length} 个已知月周期" : "月周期未知");
+        }
         var cycle = ResetCycleProgress.Calculate(values, now);
         body.Children.Add(new TextBlock { Text = cycle is { } elapsed ? $"边框时间进度 {elapsed:0}% · 周/月周期等权平均" : "边框时间进度未知",
             FontSize = 11, Foreground = Resource("Cycle"), TextWrapping = TextWrapping.Wrap });

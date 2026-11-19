@@ -37,6 +37,14 @@ internal static class MonthlyWaterTests
         Check("空账号不显示假的月栏", WaterColumns.Build([], now, QuotaDisplayMode.Split).Count == 2);
         Check("月窗口过期能提示", (free with { AdditionalWindows = [new(2592000, 75, now)] }).IsExpired(now));
         Check("不同套餐的真实月窗口也可显示", WaterColumns.Build([free with { Plan = "Codex" }], now, QuotaDisplayMode.Split) is [{ Id: "m", Remaining: 75 }]);
+        Check("月时间进度与月剩余独立", Math.Abs(ResetCycleProgress.MonthElapsed(free, now)!.Value - 100d / 3) < 0.001);
+        Check("月时间进度起点为0%", ResetCycleProgress.MonthElapsed(free with
+            { AdditionalWindows = [new(2592000, 75, now.AddDays(30))] }, now) == 0);
+        Check("月周期到期为100%", ResetCycleProgress.MonthElapsed(free with
+            { AdditionalWindows = [new(2592000, 75, now.AddDays(-1))] }, now) == 100);
+        Check("缺月重置时间显示未知", ResetCycleProgress.MonthElapsed(free with
+            { AdditionalWindows = [new(2592000, 75, null)] }, now) is null);
+        Check("失败快照月进度未知", ResetCycleProgress.MonthElapsed(free with { Error = "失败" }, now) is null);
         return count;
     }
 }

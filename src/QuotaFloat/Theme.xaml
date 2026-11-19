@@ -6,6 +6,7 @@
  <SolidColorBrush x:Key="Five" Color="#287CBA"/>
  <SolidColorBrush x:Key="Week" Color="#148568"/>
  <SolidColorBrush x:Key="Cycle" Color="#B76621"/>
+ <SolidColorBrush x:Key="Month" Color="#713B86"/>
  <SolidColorBrush x:Key="Danger" Color="#B84946"/>
  <LinearGradientBrush x:Key="Surface" StartPoint="0,0" EndPoint="1,1">
   <GradientStop Color="#FFFDFC" Offset="0"/>

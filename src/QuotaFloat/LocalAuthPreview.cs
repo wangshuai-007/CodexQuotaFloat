@@ -36,17 +36,19 @@ internal static class LocalAuthPreview
     private static void MonthlyPreview(string output, List<string> report)
     {
         var account = new AccountQuota("fixture-monthly", "monthly@demo.local", "Free", null, null, null, null)
-            { AdditionalWindows = [new(2592000, 100, DateTimeOffset.Now.AddDays(30))] };
+            { AdditionalWindows = [new(2592000, 100, DateTimeOffset.Now.AddDays(15))] };
         var row = new AccountRow(account, 1, DateTimeOffset.Now);
         Save(row, output, "preview-monthly-row.png", 580, 220);
         var peek = new AccountPeekWindow();
         peek.Update(account, 0, 1, false, null, false, true);
         Save((FrameworkElement)peek.Content, output, "preview-monthly-hover.png", 304, 220);
         var texts = Texts((DependencyObject)peek.Content).ToArray();
-        if (!texts.Contains("月剩余") || !texts.Contains("100%") || texts.Contains("周剩余"))
-            throw new InvalidOperationException("月额度悬停未展示实际周期或错误显示周额度");
+        if (!texts.Contains("月剩余") || !texts.Contains("100%") || !texts.Contains("月已过时间") ||
+            !texts.Contains("50%") || texts.Contains("周剩余") ||
+            !Texts(row).Contains("月已过时间") || !Texts(row).Contains("50%"))
+            throw new InvalidOperationException("月额度列表或悬停未分别显示月剩余和月已过时间");
         peek.Close();
-        report.Add("通过：月额度列表/悬停显示100%及重置时刻，不冒充5h/周额度");
+        report.Add("通过：月额度列表/悬停分别显示月剩余100%和月已过时间50%");
     }
 
     private static IEnumerable<string> Texts(DependencyObject element)

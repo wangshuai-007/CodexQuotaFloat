@@ -52,7 +52,8 @@ public sealed class AccountRow : Border
 
     private static void AddMetrics(StackPanel stack, AccountQuota account, DateTimeOffset now)
     {
-        if (account.FiveHourRemaining is null && account.WeeklyRemaining is null && account.AdditionalWindows.Count > 0)
+        if (account.FiveHourRemaining is null && account.WeeklyRemaining is null &&
+            (account.AdditionalWindows.Count > 0 || WaterColumns.HasMonth(account)))
         {
             AddAdditionalMetrics(stack, account, now);
             return;
@@ -74,17 +75,29 @@ public sealed class AccountRow : Border
     private static void AddAdditionalMetrics(StackPanel stack, AccountQuota account, DateTimeOffset now)
     {
         var metrics = new Grid { Margin = new Thickness(32, 10, 0, 0) };
-        foreach (var _ in account.AdditionalWindows) metrics.ColumnDefinitions.Add(new ColumnDefinition());
-        for (var i = 0; i < account.AdditionalWindows.Count; i++)
+        var column = 0;
+        foreach (var window in account.AdditionalWindows)
         {
-            var window = account.AdditionalWindows[i];
             var time = window.Reset is { } reset ? $"重置 {reset.LocalDateTime:MM/dd HH:mm} · {QuotaMath.Countdown(reset, now)}" : "重置时间未知";
-            AddMetric(metrics, i, window.Label + " 剩余", window.Remaining, window.IsMonthly ? "Cycle" : "Five", time);
+            metrics.ColumnDefinitions.Add(new ColumnDefinition());
+            AddMetric(metrics, column++, window.IsMonthly ? "月剩余" : window.Label + " 剩余",
+                window.Remaining, window.IsMonthly ? "Month" : "Five", time);
+        }
+        if (WaterColumns.HasMonth(account))
+        {
+            if (!account.AdditionalWindows.Any(window => window.IsMonthly))
+            {
+                metrics.ColumnDefinitions.Add(new ColumnDefinition());
+                AddMetric(metrics, column++, "月剩余", null, "Month", "月窗口未知");
+            }
+            metrics.ColumnDefinitions.Add(new ColumnDefinition());
+            AddMetric(metrics, column, "月已过时间", ResetCycleProgress.MonthElapsed(account, now), "Cycle", "按月额度重置周期");
         }
         stack.Children.Add(metrics);
         if (account.FiveHourRemaining is null && account.WeeklyRemaining is null)
             stack.Children.Add(new TextBlock { Text = account.Error ?? (account.IsExpired(now) ? "窗口已到期 · 待刷新" :
-                account.AdditionalWindows.Any(window => window.IsMonthly) ? "月额度独立计入 m 水位" : "实际周期额度 · 不计入5h/7天水位"),
+                account.AdditionalWindows.Any(window => window.IsMonthly) ? "月额度独立计入 m 水位" :
+                WaterColumns.HasMonth(account) ? "月窗口未知" : "实际周期额度 · 不计入5h/7天水位"),
                 Foreground = Resource(account.Error is not null || account.IsExpired(now) ? "Danger" : "Muted"),
                 FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(32, 8, 0, 0) });
     }

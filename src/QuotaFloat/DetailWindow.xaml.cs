@@ -45,7 +45,7 @@ public partial class DetailWindow : Window
             values.Count == 0 ? local ? "暂无本地账号额度；请检查ChatGPT登录及认证文件。" : "暂无 Codex 账号。演示账号数量可在设置中调整；CPA 模式请检查账号是否启用。" :
             valid != values.Count ? "部分账号失败、选定窗口缺失或到期；仅有效窗口计入对应水位。" :
             demo ? "当前为假数据。百分比参考示例，邮箱已匿名化；重置时间为相对演示时间。" :
-            "只读取额度，不重置、不修改账号；7d 显示固定 7 天周期的已走过时间。";
+            "只读取额度，不重置、不修改账号；已过时间按各自额度重置周期计算。";
         Notice.Foreground = (System.Windows.Media.Brush)FindResource(error is null ? "Muted" : "Danger");
         RefreshButton.IsEnabled = !loading;
         RefreshButton.Content = loading ? "读取中" : "刷新";

@@ -30,7 +30,7 @@ internal static class MonthlyWaterPreview
         details.Close();
         var peek = new AccountPeekWindow();
         peek.UpdateWater([paid, free], now, "演示", null);
-        Save((FrameworkElement)peek.Content, Path.Combine(output, "preview-month-water-hover.png"), 304, 195);
+        Save((FrameworkElement)peek.Content, Path.Combine(output, "preview-month-water-hover.png"), 304, 250);
         peek.Close();
         report.Add("通过：仅月账号单栏m、混合5h/7d/m、过期未知及悬停/摘要独立百分比");
     }
