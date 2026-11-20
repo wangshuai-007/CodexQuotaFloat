@@ -29,12 +29,7 @@ public sealed class QuotaSession : IDisposable
     /// <summary>清空旧来源数据并取消旧请求，不把CPA失败回退为假数据。</summary>
     public void Configure(AppSettings options, string managementKey)
     {
-        version++;
-        requestCancellation.Cancel();
-        (source as IDisposable)?.Dispose();
-        source = null;
-        requestCancellation.Dispose();
-        requestCancellation = new CancellationTokenSource();
+        ResetRequests();
         settings = options;
         key = managementKey;
         Accounts = [];
@@ -44,6 +39,22 @@ public sealed class QuotaSession : IDisposable
         AutoRefreshPaused = false;
         Changed?.Invoke();
     }
+
+    private void ResetRequests()
+    {
+        version++;
+        requestCancellation.Cancel();
+        (source as IDisposable)?.Dispose();
+        source = null;
+        requestCancellation.Dispose();
+        requestCancellation = new CancellationTokenSource();
+        http.CancelPendingRequests();
+        localHttp.CancelPendingRequests();
+        Loading = false;
+    }
+
+    /// <summary>唤醒后重建额度来源；保留上次快照和账号顺序，旧请求不能覆盖新结果。</summary>
+    internal void ResetAfterResume() => ResetRequests();
 
     /// <summary>读取所选数据源；错误保留旧快照并明确标注，鉴权失败暂停定时刷新。</summary>
     public async Task RefreshAsync()

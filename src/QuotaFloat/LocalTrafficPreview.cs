@@ -20,6 +20,37 @@ internal static class LocalTrafficPreview
         report.Add("通过：本地认证默认session统计、重新配置清除旧数据、显式Keeper优先与本地流量悬停口径");
     }
 
+    internal static async Task CheckInterruptedTrafficAsync(List<string> report)
+    {
+        using var transport = new InterruptedTrafficHandler();
+        using var traffic = new TrafficSession(new AppSettings
+            { UseDemo = false, ManagementUrl = "http://localhost:8317/v0/management" }, "fixture", transport);
+        var old = traffic.RefreshAsync();
+        await transport.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        traffic.Configure(new AppSettings { UseDemo = true }, "");
+        await traffic.RefreshAsync();
+        var current = traffic.Snapshot;
+        transport.Finish.SetResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable));
+        await old.WaitAsync(TimeSpan.FromSeconds(2));
+        if (current.Requests != 18 || !ReferenceEquals(current, traffic.Snapshot))
+            throw new InvalidOperationException("唤醒后旧请求覆盖了新流量数据");
+        report.Add("通过：模拟唤醒时旧流量请求尚未返回，新会话仍可刷新，迟到结果不覆盖");
+    }
+
+    private sealed class InterruptedTrafficHandler : System.Net.Http.HttpMessageHandler
+    {
+        internal readonly TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal readonly TaskCompletionSource<System.Net.Http.HttpResponseMessage> Finish =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task<System.Net.Http.HttpResponseMessage> SendAsync(
+            System.Net.Http.HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Started.SetResult();
+            return Finish.Task;
+        }
+    }
+
     private static async Task<TrafficSnapshot> CheckSessionAsync()
     {
         var root = Path.Combine(Path.GetTempPath(), "quota-traffic-preview-" + Guid.NewGuid().ToString("N"));

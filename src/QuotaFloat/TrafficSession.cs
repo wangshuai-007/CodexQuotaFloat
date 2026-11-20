@@ -33,6 +33,7 @@ internal sealed class TrafficSession : IDisposable
         cancellation.Cancel();
         cancellation.Dispose();
         cancellation = new();
+        http.CancelPendingRequests();
         keeper?.Dispose(); keeper = null;
         localSessions = null;
         settings = options;

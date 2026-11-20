@@ -66,6 +66,7 @@ public static class PreviewHarness
         await WaterDisplayPreview.RunAsync(output, report);
         MonthlyWaterPreview.Run(output, report);
         LocalTrafficPreview.Run(output, report);
+        await LocalTrafficPreview.CheckInterruptedTrafficAsync(report);
         AboutPreview.Run(output, report);
         WaterDesignPreview.Run(output, report);
         await WaterPeekPreview.RunAsync(output, report);
@@ -73,6 +74,16 @@ public static class PreviewHarness
         TrafficPeekPreview.Run(output, report);
         KeeperPreview.Run(output, report);
         CodexFollowPreview.Run(report);
+        using (var recovery = new QuotaSession(new AppSettings { UseDemo = true }, ""))
+        {
+            await recovery.RefreshAsync();
+            var previous = recovery.Accounts;
+            recovery.ResetAfterResume();
+            Assert(ReferenceEquals(previous, recovery.Accounts), "模拟唤醒保留额度快照", report);
+            await recovery.RefreshAsync();
+            Assert(!ReferenceEquals(previous, recovery.Accounts) && !recovery.Loading && recovery.Error is null,
+                "模拟唤醒重新刷新额度", report);
+        }
         CheckGeometry(report);
         File.WriteAllLines(Path.Combine(output, "ui-checks.txt"), report.Append(
             "限制：离线WPF渲染及属性/几何验证，不替代真实鼠标悬停、系统置顶或多屏混合DPI人工验收。"), new UTF8Encoding(false));

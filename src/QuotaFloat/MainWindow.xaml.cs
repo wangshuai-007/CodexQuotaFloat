@@ -51,6 +51,7 @@ public partial class MainWindow : Window
         session.Changed += UpdateViews;
         traffic.Changed += UpdateTraffic;
         SourceInitialized += (_, _) => RestorePosition();
+        if (persist) WirePowerRecovery();
         Loaded += async (_, _) => { details.Owner = this; peek.Owner = this; await RefreshAll(); };
         LocationChanged += (_, _) => PositionVisiblePanels();
         DpiChanged += (_, _) => PositionVisiblePanels();

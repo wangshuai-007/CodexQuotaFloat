@@ -8,6 +8,7 @@ namespace QuotaFloat.Core;
 internal sealed class CodexRpc : IDisposable
 {
     private readonly Process process;
+    private readonly CancellationTokenSource stopStderr = new();
     private readonly Task stderr;
     private int id;
     private bool disposed;
@@ -21,7 +22,7 @@ internal sealed class CodexRpc : IDisposable
             StandardErrorEncoding = new UTF8Encoding(false) };
         start.ArgumentList.Add("app-server");
         process = Process.Start(start) ?? throw new IOException("无法启动Codex CLI");
-        stderr = DrainAsync(process.StandardError);
+        stderr = DrainAsync(process.StandardError, stopStderr.Token);
     }
 
     internal async Task InitializeAsync(CancellationToken token, bool experimental = false)
@@ -77,27 +78,47 @@ internal sealed class CodexRpc : IDisposable
         throw new FormatException("Codex CLI响应过大");
     }
 
-    private static async Task DrainAsync(StreamReader reader)
+    private static async Task DrainAsync(StreamReader reader, CancellationToken token)
     {
         var buffer = new char[4096];
-        while (await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false) > 0) { /* 不保留含个人信息的诊断输出。 */ }
+        while (await reader.ReadAsync(buffer.AsMemory(), token).ConfigureAwait(false) > 0) { /* 不保留诊断正文。 */ }
     }
 
     public void Dispose()
     {
         if (disposed) return;
         disposed = true;
+        _ = Task.Run(CloseProcessAsync);
+    }
+
+    private async Task CloseProcessAsync()
+    {
         try
         {
-            process.StandardInput.Close();
-            if (!process.WaitForExit(200))
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            try
             {
-                try { process.Kill(); }
-                catch (InvalidOperationException) when (process.HasExited) { process.WaitForExit(); }
-                process.WaitForExit();
+                if (!process.HasExited) process.Kill();
+                await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             }
-            stderr.GetAwaiter().GetResult();
+            catch (InvalidOperationException) when (process.HasExited) { /* 已自行退出。 */ }
         }
-        finally { process.Dispose(); }
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException or OperationCanceledException)
+        { Trace.TraceWarning("Codex CLI 清理未完成：{0}", error.GetType().Name); }
+        finally
+        {
+            stopStderr.Cancel();
+            try
+            {
+                process.StandardOutput.Dispose();
+                process.StandardError.Dispose();
+                process.StandardInput.Dispose();
+                await stderr.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (stopStderr.IsCancellationRequested) { /* 退出时主动取消。 */ }
+            catch (Exception error) when (error is IOException or InvalidOperationException or TimeoutException)
+            { Trace.TraceWarning("Codex CLI 管道关闭：{0}", error.GetType().Name); }
+            finally { process.Dispose(); stopStderr.Dispose(); }
+        }
     }
 }
