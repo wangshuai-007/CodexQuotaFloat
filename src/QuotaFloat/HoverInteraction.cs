@@ -10,7 +10,7 @@ public partial class MainWindow
 
     private void ShowPeekAt(double y)
     {
-        if (hiddenByClient || dragging || settingsOpen || details.IsVisible || menu.IsOpen) return;
+        if (hiddenByClient || dragging || settingsOpen || details.IsVisible || menuHasPriority || menu.IsOpen) return;
         trafficPeek = y >= 208 && y <= 268;
         waterPeek = !trafficPeek && (y < QuotaGauge.AccountsTop || y >= QuotaGauge.AccountsTop + QuotaGauge.AccountsHeight || DisplayAccounts.Count == 0);
         if (trafficPeek || waterPeek) Gauge.ClearHighlight();
@@ -20,6 +20,7 @@ public partial class MainWindow
 
     private void RevealPeek()
     {
+        if (menuHasPriority) return;
         hoverTimer.Stop();
         var selected = Gauge.Viewport.Selected;
         var id = selected >= 0 && selected < DisplayAccounts.Count ? DisplayAccounts[selected].Id : null;

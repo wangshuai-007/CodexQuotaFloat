@@ -17,7 +17,8 @@ public partial class MainWindow
     private Func<IntPtr> foregroundReader = ClientAttachment.ForegroundWindow;
     private ForegroundWatcher? foregroundWatcher;
     private bool foregroundUpdateQueued;
-    private bool EffectiveTopmost => attachedClient == IntPtr.Zero && settings.AlwaysOnTop;
+    private bool menuHasPriority;
+    private bool EffectiveTopmost => !menuHasPriority && attachedClient == IntPtr.Zero && settings.AlwaysOnTop;
     private IEnumerable<IntPtr> OwnHandles => new Window[] { this, details, peek }.Select(w => new WindowInteropHelper(w).Handle);
     private readonly MenuItem followMenu = new() { Header = "跟随 Codex 显示/隐藏", IsCheckable = true };
 
@@ -34,7 +35,12 @@ public partial class MainWindow
         menu.Items.Insert(3, followMenu);
         menu.Opened += (_, _) => followMenu.IsChecked = settings.FollowCodex;
         clientTimer.Tick += (_, _) => FollowClient();
-        Loaded += (_, _) => { if (settings.FollowCodex) ApplyFollowStartup(true, false); ConfigureClientFollow(); };
+        Loaded += (_, _) =>
+        {
+            StartForegroundWatcher();
+            if (settings.FollowCodex) ApplyFollowStartup(true, false);
+            ConfigureClientFollow();
+        };
         Closed += (_, _) => { clientTimer.Stop(); StopForegroundWatcher(); };
     }
 
@@ -43,17 +49,15 @@ public partial class MainWindow
         followMenu.IsChecked = settings.FollowCodex;
         if (settings.FollowCodex) clientTimer.Start();
         else clientTimer.Stop();
-        ConfigureForegroundWatcher();
         FollowClient();
     }
 
-    private void ConfigureForegroundWatcher()
+    private void StartForegroundWatcher()
     {
-        if (!settings.FollowCodex) { StopForegroundWatcher(); return; }
         if (foregroundWatcher is not null) return;
         try { foregroundWatcher = new ForegroundWatcher(QueueForegroundUpdate); }
         catch (Win32Exception)
-        { tray.Text = "Codex 额度浮窗 · 前台监听失败，使用500ms轮询"; }
+        { tray.Text = "Codex 额度浮窗 · 无法监听前台窗口及右键菜单"; }
     }
 
     private void StopForegroundWatcher()
@@ -65,13 +69,28 @@ public partial class MainWindow
 
     private void QueueForegroundUpdate()
     {
-        if (!settings.FollowCodex || foregroundUpdateQueued || Dispatcher.HasShutdownStarted) return;
+        if (foregroundUpdateQueued || Dispatcher.HasShutdownStarted) return;
         foregroundUpdateQueued = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
         {
             foregroundUpdateQueued = false;
-            if (settings.FollowCodex && foregroundWatcher is not null) FollowClient();
+            UpdateMenuPriority();
+            if (settings.FollowCodex) FollowClient();
         }));
+    }
+
+    private void UpdateMenuPriority()
+    {
+        var active = menu.IsOpen || trayMenuOpen || foregroundWatcher?.IsMenuActive() == true;
+        if (active == menuHasPriority) return;
+        menuHasPriority = active;
+        if (active)
+        {
+            peek.Hide();
+            Gauge.ClearHighlight();
+        }
+        Topmost = EffectiveTopmost;
+        details.Topmost = EffectiveTopmost;
     }
 
     private void FollowClient()
@@ -98,7 +117,7 @@ public partial class MainWindow
         var foreground = foregroundReader();
         var covered = coverageReader?.Invoke(next) ?? ClientAttachment.CoveredBy(next, foreground, OwnHandles);
         ApplyClientVisibility(available is null ? true : available == true && !covered);
-        if (IsVisible && available == true)
+        if (IsVisible && available == true && !menuHasPriority)
         {
             try
             {

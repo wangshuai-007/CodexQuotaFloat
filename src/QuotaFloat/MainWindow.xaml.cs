@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private bool pinned;
     private bool dragging;
     private bool settingsOpen;
+    private bool trayMenuOpen;
     private readonly ContextMenu menu = new();
 
     /// <summary>创建浮窗；可注入只读流量传输用于离线验证，不改用户设置。</summary>
@@ -126,8 +127,8 @@ public partial class MainWindow : Window
         var quit = new MenuItem { Header = "退出浮窗" };
         quit.Click += (_, _) => Close();
         foreach (var item in new object[] { detail, top, dock, refresh, configure, new Separator(), quit }) menu.Items.Add(item);
-        menu.Opened += (_, _) => { top.IsChecked = settings.AlwaysOnTop; dock.IsChecked = settings.DockToEdge; };
-        menu.Closed += (_, _) => hoverTimer.Start();
+        menu.Opened += (_, _) => { top.IsChecked = settings.AlwaysOnTop; dock.IsChecked = settings.DockToEdge; UpdateMenuPriority(); };
+        menu.Closed += (_, _) => { hoverTimer.Start(); QueueForegroundUpdate(); };
         Gauge.ContextMenu = menu;
     }
 
@@ -141,6 +142,8 @@ public partial class MainWindow : Window
         tray.Visible = true;
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(() => ShowFromTray(true));
         var trayMenu = new System.Windows.Forms.ContextMenuStrip();
+        trayMenu.Opened += (_, _) => { trayMenuOpen = true; UpdateMenuPriority(); };
+        trayMenu.Closed += (_, _) => { trayMenuOpen = false; QueueForegroundUpdate(); };
         trayMenu.Items.Add("显示浮窗", null, (_, _) => Dispatcher.Invoke(() => ShowFromTray()));
         trayMenu.Items.Add("设置", null, (_, _) => Dispatcher.Invoke(OpenSettings));
         trayMenu.Items.Add("关于与更新", null, (_, _) => Dispatcher.Invoke(OpenAbout));
@@ -155,7 +158,8 @@ public partial class MainWindow : Window
         Gauge.DisplayMode = settings.QuotaDisplay;
         Gauge.Update(DisplayAccounts, label, DateTimeOffset.Now, session.Error is not null, !settings.ReducedMotion);
         details.Update(DisplayAccounts, settings.UseDemo, settings.AlwaysOnTop, pinned,
-            session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo, settings.QuotaDisplay);
+            session.Error, session.Loading, session.UpdatedAt, settings.UseLocalAuth && !settings.UseDemo, settings.QuotaDisplay,
+            windowTopmost: menuHasPriority ? false : null);
         details.Topmost = EffectiveTopmost;
         tray.Text = $"Codex 额度浮窗 · {label}";
         if (peek.IsVisible) UpdatePeek();

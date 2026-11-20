@@ -32,7 +32,7 @@ public partial class DetailWindow : Window
     /// <summary>刷新信息与错误提示，不覆盖分页位置。mode：0=5小时；1=7天；2=左5小时、右7天。</summary>
     public void Update(IReadOnlyList<AccountQuota> values, bool demo, bool topmost, bool pinned,
         string? error, bool loading, DateTimeOffset? refreshed, bool local = false,
-        QuotaDisplayMode mode = QuotaDisplayMode.FiveHour)
+        QuotaDisplayMode mode = QuotaDisplayMode.FiveHour, bool? windowTopmost = null)
     {
         accounts = values;
         now = DateTimeOffset.Now;
@@ -49,7 +49,7 @@ public partial class DetailWindow : Window
         Notice.Foreground = (System.Windows.Media.Brush)FindResource(error is null ? "Muted" : "Danger");
         RefreshButton.IsEnabled = !loading;
         RefreshButton.Content = loading ? "读取中" : "刷新";
-        Topmost = topmost;
+        Topmost = windowTopmost ?? topmost;
         updating = true;
         TopmostToggle.IsChecked = topmost;
         PinDetails.IsChecked = pinned;

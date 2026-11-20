@@ -28,6 +28,12 @@ public partial class MainWindow
                 $"设置立即应用独立5h/7天水位：{mode}", checks);
         }
         await CheckHoverAsync(checks);
+        var menuChecks = new List<string>();
+        await CheckContextMenuAsync(menuChecks);
+        await CheckSystemMenuAsync(menuChecks);
+        Directory.CreateDirectory(output);
+        File.WriteAllLines(Path.Combine(output, "menu-checks.txt"), menuChecks, new UTF8Encoding(false));
+        checks.AddRange(menuChecks);
         await CheckTrafficHoverAsync(checks);
         await CheckWaterHoverAsync(checks);
         await CheckScrollAsync(checks);
@@ -36,10 +42,29 @@ public partial class MainWindow
         await CheckTrafficCadenceAsync(checks);
         await CheckMonitorsAsync(checks);
         await CheckCodexFollowAsync(checks);
-        Directory.CreateDirectory(output);
         File.WriteAllLines(Path.Combine(output, "native-checks.txt"), checks.Append(
             "限制：真实窗口与实际显示器事件路径验证，包括跨屏定位；未进行系统物理鼠标操作或人工验收。"), new UTF8Encoding(false));
         Close();
+    }
+
+    private async Task CheckContextMenuAsync(List<string> checks)
+    {
+        ShowPeekAt(50);
+        Check(peek.IsVisible && IsNativeTopmost(peek), "右键前悬停提示正常置顶", checks);
+        menu.PlacementTarget = Gauge;
+        menu.IsOpen = true;
+        await Task.Delay(120);
+        ShowPeekAt(230);
+        UpdateViews();
+        var menuHandle = ((HwndSource)PresentationSource.FromVisual(menu)).Handle;
+        Check(menuHasPriority && menu.IsOpen && !peek.IsVisible && !IsNativeTopmost(this) &&
+            !IsNativeTopmost(details) && ClientAttachment.IsAbove(menuHandle, new WindowInteropHelper(this).Handle),
+            "右键菜单实际位于浮窗之上，刷新和悬停不抢层级", checks);
+        menu.IsOpen = false;
+        for (var attempt = 0; menuHasPriority && attempt < 20; attempt++) await Task.Delay(50);
+        ShowPeekAt(50);
+        Check(!menuHasPriority && IsNativeTopmost(this) && peek.IsVisible && IsNativeTopmost(peek),
+            "关闭右键菜单恢复原有置顶和悬停", checks);
     }
 
     private async Task CheckHoverAsync(List<string> checks)
