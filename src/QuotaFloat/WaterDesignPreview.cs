@@ -21,6 +21,7 @@ internal static class WaterDesignPreview
         Render(null, 75, false, 2, "左侧未知", output, report);
         Render(null, null, false, 3, "全部未知", output, report);
         Render(75, 78, true, 4, "旧数据", output, report);
+        Render(75, 78, false, 5, "CPA Fast", output, report);
     }
 
     private static void Render(double? five, double? week, bool stale, int index, string name,
@@ -33,18 +34,39 @@ internal static class WaterDesignPreview
         gauge.Measure(new Size(32, 280)); gauge.Arrange(new Rect(0, 0, 32, 280));
         var native = new RenderTargetBitmap(32, 280, 96, 96, PixelFormats.Pbgra32); native.Render(gauge);
         var pixels = new byte[32 * 280 * 4]; native.CopyPixels(pixels, 128, 0);
+        if (index == 5)
+        {
+            gauge.SetFastIndicator("FAST");
+            gauge.UpdateLayout();
+            var active = new RenderTargetBitmap(32, 280, 96, 96, PixelFormats.Pbgra32); active.Render(gauge);
+            var fast = new byte[pixels.Length]; active.CopyPixels(fast, 128, 0);
+            Check(!fast.AsSpan(32 * 128, 12 * 128).SequenceEqual(pixels.AsSpan(32 * 128, 12 * 128)), "Fast 绘制状态徽标", report);
+            Check(!fast.AsSpan(192 * 128, 16 * 128).SequenceEqual(pixels.AsSpan(192 * 128, 16 * 128)), "Fast 绘制液体纹理", report);
+            Check(fast.AsSpan(48 * 128, 8 * 128).SequenceEqual(pixels.AsSpan(48 * 128, 8 * 128)) &&
+                gauge.Level == 75 && gauge.WeeklyLevel == 78, "Fast 不改变水位数字或水面以上区域", report);
+        }
         var left = (200 * 32 + 10) * 4; var right = (266 * 32 + 22) * 4;
         if (five is null or 0) Check(pixels[left + 2] > 220, name + "不伪造左侧水位", report);
         if (week > 0 && !stale) Check(pixels[right + 1] > pixels[right] + 5,
             name + "保留右侧全高渐变水位", report);
         if (stale) Check(pixels[left + 2] > 190, "旧水位降低透明度", report);
-        var canvas = new Canvas { Width = 220, Height = 340,
+        var canvas = new Canvas { Width = index == 5 ? 244 : 220, Height = 340,
             Background = (Brush)Application.Current.FindResource("Surface") };
         canvas.Children.Add(new TextBlock { Text = "左5h / 右7天 · " + name, FontSize = 12,
             Margin = new Thickness(16, 15, 0, 0) });
-        Canvas.SetLeft(gauge, 94); Canvas.SetTop(gauge, 48); canvas.Children.Add(gauge);
-        canvas.Measure(new Size(220, 340)); canvas.Arrange(new Rect(0, 0, 220, 340));
-        var bitmap = new RenderTargetBitmap(220, 340, 96, 96, PixelFormats.Pbgra32); bitmap.Render(canvas);
+        Canvas.SetLeft(gauge, index == 5 ? 194 : 94); Canvas.SetTop(gauge, 48); canvas.Children.Add(gauge);
+        if (index == 5)
+        {
+            var header = FastGlyph.MenuHeader("关闭 CPA 全局 Fast");
+            var menuSample = new Border
+            {
+                Child = header, Background = Brushes.White, BorderBrush = (Brush)Application.Current.FindResource("Stroke"),
+                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(8)
+            };
+            Canvas.SetLeft(menuSample, 12); Canvas.SetTop(menuSample, 58); canvas.Children.Add(menuSample);
+        }
+        canvas.Measure(new Size(canvas.Width, canvas.Height)); canvas.Arrange(new Rect(0, 0, canvas.Width, canvas.Height));
+        var bitmap = new RenderTargetBitmap((int)canvas.Width, (int)canvas.Height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(canvas);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(Path.Combine(output, $"preview-water-design-{index}.png")); encoder.Save(stream);
         Check(gauge.Width == 32 && gauge.Height == 280, name + "保留原尺寸", report);

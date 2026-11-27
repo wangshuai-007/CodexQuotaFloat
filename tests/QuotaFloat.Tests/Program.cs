@@ -136,6 +136,7 @@ foreach (var badUrl in new[] { "http://example.com/v8/management", "file:///v8/m
 Check("允许本机管理地址", CpaQuotaSource.ValidateUrl("http://127.0.0.1:8317/v8/management").IsLoopback);
 Check("允许远端HTTPS", CpaQuotaSource.ValidateUrl("https://example.com/v8/management").Scheme == "https");
 passed += await CpaFailureTests.RunAsync();
+passed += await CpaFastTests.RunAsync();
 passed += ViewportTests.Run();
 passed += WaterDisplayTests.Run();
 passed += SessionHookTests.Run();

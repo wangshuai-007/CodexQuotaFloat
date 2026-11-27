@@ -16,6 +16,12 @@ Codex Hook 关联启动不属于数据源配置；开启、信任、首次消息
 
 依据：[CPA管理接口](https://help.router-for.me/management/apiv8)。
 
+### CPA 全局 Fast
+
+使用 CPA v8 额度来源且配置管理密钥后，在**浮窗右键菜单 → 开启 CPA 全局 Fast**直接开启，再从同一菜单关闭。开启后，所有经过同一台 CPA 且匹配 `codex` 协议、`gpt-*` 模型的请求都会被设置为 `service_tier: priority`，不区分账号或客户端。实际档位由上游决定，可能更快消耗额度或积分。
+
+浮窗在启动、额度定时同步或按 F5 时读取服务器状态。确认全局规则后，水柱显示带闪电的 **FAST** 徽标，水面和液体内出现光泽，剩余额度的颜色和高度不变。服务器已有的规则也会显示（部分匹配显示 **F·部分**）；关闭只移除浮窗自己创建的规则，不移除管理员配置。若有档位冲突，先到 CPA 检查规则。切换时请勿同时在管理面板编辑同一覆盖列表：CPA v8 按整个列表替换，没有公开的条件写入接口。
+
 ## 本地认证
 
 路径留空优先使用PATH中的原生 `codex.exe app-server`，其次查找Windows Codex应用CLI位置。只执行初始化、`account/read` 和 `account/rateLimits/read`，不启动推理；CLI自行维护认证缓存。不执行codex.cmd等shell脚本。

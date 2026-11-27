@@ -21,12 +21,23 @@ public sealed partial class QuotaGauge : FrameworkElement
     private string source = "演示";
     private bool stale;
     private bool highlight;
+    private string fastIndicator = "";
     public event Action? InvokeRequested;
     private static readonly Brush Ink = BrushOf("#203038");
     private static readonly Brush Muted = BrushOf("#536D76");
     private static readonly Brush Five = BrushOf("#287CBA");
     private static readonly Brush Week = BrushOf("#148568");
     private static readonly Brush Cycle = BrushOf("#B76621");
+    private static readonly Brush FastBadge = BrushOf("#173947");
+    private static readonly Brush FastBolt = BrushOf("#A4F5E6");
+    private static readonly Brush FastBadgeText = BrushOf("#F5FFFD");
+
+    internal void SetFastIndicator(string label)
+    {
+        if (fastIndicator == label) return;
+        fastIndicator = label;
+        InvalidateVisual();
+    }
 
     public QuotaGauge()
     {
@@ -85,7 +96,21 @@ public sealed partial class QuotaGauge : FrameworkElement
         for (var i = 0; i < 15; i++)
             dc.DrawLine(new Pen(BrushOf("#9CB5B9"), 0.7), new Point(3, 48 + i * 10), new Point(i % 5 == 0 ? 7 : 5, 48 + i * 10));
         DrawWaterLabels(dc);
-        Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 35, 8, Muted);
+        if (fastIndicator.Length == 0)
+            Text(dc, stale ? "旧" : source == "演示" ? "演" : source == "CPA" ? "C" : source == "本地" ? "L" : "…", 16, 35, 8, Muted);
+        else if (fastIndicator == "FAST")
+        {
+            dc.DrawRoundedRectangle(FastBadge, null, new Rect(2.5, 32, 27, 12), 6, 6);
+            dc.PushTransform(new MatrixTransform(0.57, 0, 0, 0.57, 5.1, 34));
+            dc.DrawGeometry(FastBolt, null, FastGlyph.Bolt);
+            dc.Pop();
+            Text(dc, "FAST", 19.8, 33, 7.5, FastBadgeText, "Bahnschrift SemiBold");
+        }
+        else
+        {
+            dc.DrawRoundedRectangle(BrushOf("#E4F2F3"), null, new Rect(3, 32, 26, 12), 6, 6);
+            Text(dc, fastIndicator, 16, 33, 8, FastBadge);
+        }
         DrawMeters(dc);
         DrawTraffic(dc);
         dc.DrawRoundedRectangle(Muted, null, new Rect(11, 270, 10, 2), 1, 1);
@@ -114,7 +139,7 @@ public sealed partial class QuotaGauge : FrameworkElement
             Meter(dc, account.WeeklyRemaining, Week, y);
             Meter(dc, QuotaMath.WeekElapsed(account.WeeklyReset, now), Cycle, y + 3.5);
         }
-        if (Viewport.Start > 0) Text(dc, "↑", 16, 39, 8, Muted);
+        if (Viewport.Start > 0) Text(dc, "↑", 16, fastIndicator.Length == 0 ? 39 : 43, 7, Muted);
         if (Viewport.Start + Viewport.VisibleCount < accounts.Count) Text(dc, "↓", 16, 190, 8, Muted);
     }
 
@@ -138,7 +163,9 @@ public sealed partial class QuotaGauge : FrameworkElement
 
     private sealed class GaugePeer(QuotaGauge gauge) : FrameworkElementAutomationPeer(gauge), IInvokeProvider
     {
-        protected override string GetNameCore() => $"Codex额度浮窗，{gauge.source}，{gauge.accounts.Count}个账号。上下键切换账号，Enter查看全部。";
+        protected override string GetNameCore() => $"Codex额度浮窗，{gauge.source}，{gauge.accounts.Count}个账号。" +
+            (gauge.fastIndicator == "FAST" ? "CPA 全局 Fast 规则已启用。" :
+                gauge.fastIndicator.Length > 0 ? "CPA 部分 Fast 规则或存在冲突。" : "") + "上下键切换账号，Enter查看全部。";
         protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Button;
         public override object? GetPattern(PatternInterface patternInterface) => patternInterface == PatternInterface.Invoke ? this : base.GetPattern(patternInterface);
         public void Invoke() => gauge.Dispatcher.BeginInvoke(new Action(() => gauge.InvokeRequested?.Invoke()));

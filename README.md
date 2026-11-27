@@ -18,17 +18,26 @@ Windows 原生桌面浮窗：用水位查看多个账号的 Codex 剩余额度�
 
 ![三种水位模式](docs/screenshots/water-modes.png)
 
+### CPA 全局 Fast
+
+连接 CPA v8 管理额度后，右键水柱，点带闪电的 **开启 CPA 全局 Fast**。回读确认服务器已保存规则后，水柱会亮起 **FAST** 徽标，并在液面和液体内显示高光。
+
+![CPA Fast 右键菜单项与启用后的水柱](docs/screenshots/cpa-fast.png)
+
+Fast 规则作用于同一台 CPA 上匹配 `codex` 协议及 `gpt-*` 的请求，不区分客户端或账号，可能更快消耗额度。浮窗会显示服务器已有的规则；从菜单关闭只移除浮窗自己创建的规则。徽标表示已读取规则，不代表上游已按 Fast 执行。详见 [Fast 配置与排错](docs/configuration.md#cpa-全局-fast)。
+
 ## 下载与启动
 
 从 [GitHub Releases](https://github.com/wangshuai-007/CodexQuotaFloat/releases) 下载 Windows x64 发布包：
 
 | 产物 | 适用情况 |
 | --- | --- |
-| `CodexQuotaFloat-版本-win-x64-self-contained.zip` | **推荐**。包含 .NET 10 Desktop 运行时，无需另装 .NET |
+| `CodexQuotaFloat-版本-win-x64-setup.exe` | **推荐**。当前用户安装包，包含 .NET 10 Desktop 运行时，支持覆盖升级 |
+| `CodexQuotaFloat-版本-win-x64-self-contained.zip` | 便携版，包含 .NET 10 Desktop 运行时，无需另装 .NET |
 | `CodexQuotaFloat-版本-win-x64-framework-dependent.zip` | 轻量版，需要 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) |
-| `SHA256SUMS.txt` | 两个发布包的 SHA256 校验值 |
+| `SHA256SUMS.txt` | 安装包和两个 ZIP 的 SHA256 校验值 |
 
-要求 Windows 10/11 x64。完整解压后双击 `CodexQuotaFloat.exe`，不要只复制EXE。首次显示演示额度，右键水柱或托盘进入设置切换真实来源。更新前从托盘退出旧程序，用完整新包替换程序目录；设置保存在程序目录之外。
+要求 Windows 10/11 x64。运行安装包按向导安装；使用 ZIP 时，完整解压后双击 `CodexQuotaFloat.exe`，不要只复制 EXE。首次显示演示额度，右键水柱或托盘进入设置切换真实来源。便携版更新前先从托盘退出旧程序，再替换完整程序目录；设置保存在程序目录之外。
 
 发布包未数字签名，Windows可能提示未知发布者。请核对来源和校验值，不要全局关闭安全保护。自包含包的运行时随应用版本更新，不依赖系统升级，建议使用最新发布包。[微软自包含发布说明](https://learn.microsoft.com/en-us/dotnet/core/deploying/)
 
@@ -48,6 +57,7 @@ Windows 原生桌面浮窗：用水位查看多个账号的 Codex 剩余额度�
 | 滚轮 / ↑ ↓ | 切换账号及滚动视口 |
 | 点击 / Enter / Space | 展开或收起全部账号列表 |
 | 拖动水柱 | 独立模式可屏幕边缘吸附；附着模式保存相对位置 |
+| 右键水柱 → CPA 全局 Fast | 开启或关闭 CPA v8 的浮窗 Fast 规则 |
 | Escape | 收起详情 |
 | F5 | 刷新，修正认证后重试 |
 | Ctrl+, | 设置 |
@@ -121,12 +131,12 @@ Keeper与额度来源独立，可搭配CPA或本地额度。密码仅会话保�
 dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
 & "scripts/build-local.ps1"
 & "release/CodexQuotaFloat.exe" --demo
-& "scripts/publish-release.ps1" -Version "0.1.0"
+& "scripts/publish-release.ps1" -Version "1.2.0"
 ```
 
 普通Build后完整输出自动复制到 `release/`。本地构建脚本只结束本项目占用文件的测试程序，构建与哈希校验成功后重启；失败不启动不完整版本。发布打包用独立暂存目录，不覆盖本地测试程序。
 
-生成两个ZIP、SHA256及发布说明，位于 `artifacts/github-release/0.1.0/`。自包含发布不裁剪WPF运行时，不是单文件EXE。标签推送在校验与上传成功后自动发布GitHub Release（正式版设为Latest，预发布版不设）；手动运行仅生成Actions产物，详见 [发布流程](docs/publishing.md)。
+生成安装包、两个 ZIP、SHA256 清单和发布说明，位于 `artifacts/github-release/1.2.0/`。自包含发布不裁剪 WPF 运行时，不是单文件 EXE。标签推送在校验与上传成功后自动发布 GitHub Release（正式版设为 Latest，预发布版不设）；手动运行仅生成 Actions 产物，详见 [发布流程](docs/publishing.md)。
 
 ## 测试与截图
 

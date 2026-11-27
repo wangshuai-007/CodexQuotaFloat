@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         WireDetails();
         Gauge.InvokeRequested += () => { pinned = true; Expand(true); };
         WireMenu();
+        WireFastMenu();
         Loaded += async (_, _) => await CheckStartupUpdateAsync();
         WireClientFollow();
         WireTimers();
@@ -103,7 +104,8 @@ public partial class MainWindow : Window
             Gauge.ClearHighlight();
         };
         refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
-        refreshTimer.Tick += async (_, _) => { if (!session.AutoRefreshPaused) await session.RefreshAsync(); };
+        refreshTimer.Tick += async (_, _) => await Task.WhenAll(LoadFastStatusAsync(),
+            session.AutoRefreshPaused ? Task.CompletedTask : session.RefreshAsync());
         trafficTimer.Interval = traffic.PollInterval;
         trafficTimer.Tick += async (_, _) => await traffic.RefreshAsync();
         trafficDisplayTimer.Tick += (_, _) => UpdateTraffic();
@@ -180,7 +182,7 @@ public partial class MainWindow : Window
         trafficTimer.Start();
         if (manual) session.PrepareManualRefresh();
         return Task.WhenAll(manual || !session.AutoRefreshPaused ? session.RefreshAsync() : Task.CompletedTask,
-            traffic.RefreshAsync(manual));
+            traffic.RefreshAsync(manual), LoadFastStatusAsync());
     }
 
     private void UpdateTraffic()
@@ -252,6 +254,7 @@ public partial class MainWindow : Window
             if (dialog.ShowDialog() != true) return;
             settings = dialog.Result;
             managementKey = dialog.ManagementKey;
+            ResetFastStatus();
             Topmost = EffectiveTopmost;
             refreshTimer.Interval = TimeSpan.FromSeconds(settings.RefreshSeconds);
             session.Configure(settings, managementKey);

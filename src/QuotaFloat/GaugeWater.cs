@@ -22,6 +22,17 @@ public sealed partial class QuotaGauge
     private static readonly Brush WaterFiveInk = BrushOf("#206A9D");
     private static readonly Brush WaterWeekInk = BrushOf("#116C55");
     private static Brush WaterMonthInk => (Brush)Application.Current.FindResource("Month");
+    private static readonly Brush FastCrestGlow = new LinearGradientBrush(ColorOf("#CCF2FFFA"), ColorOf("#00F2FFFA"), 90);
+    private static readonly Brush FastCurrent = new LinearGradientBrush
+    {
+        StartPoint = new Point(0, 0), EndPoint = new Point(0, 1),
+        GradientStops =
+        [
+            new GradientStop(ColorOf("#00FFFFFF"), 0),
+            new GradientStop(ColorOf("#88F3FFFA"), 0.42),
+            new GradientStop(ColorOf("#00FFFFFF"), 1)
+        ]
+    };
 
     private void UpdateWater(IReadOnlyList<AccountQuota> values, DateTimeOffset time, bool animate)
     {
@@ -93,6 +104,19 @@ public sealed partial class QuotaGauge
         dc.PushClip(new RectangleGeometry(new Rect(left, 42, width, 239)));
         dc.DrawGeometry(new LinearGradientBrush(ColorOf(id == "m" ? "#E9D9F0" : id == "7d" ? "#C5E8D9" : "#C1E4F3"),
             ColorOf(id == "m" ? "#B888CD" : id == "7d" ? "#6AB899" : "#78ADD1"), 90) { Opacity = stale ? 0.28 : 0.8 }, null, water);
+        if (fastIndicator == "FAST" && level > 0)
+        {
+            dc.PushClip(water);
+            dc.PushOpacity(stale ? 0.25 : 1);
+            dc.DrawRectangle(FastCrestGlow, null, new Rect(left, y, width, 27));
+            var depth = 278 - y;
+            dc.DrawRoundedRectangle(FastCurrent, null,
+                new Rect(left + width * 0.21, y + depth * 0.14, Math.Max(1, width * 0.105), depth * 0.52), 1, 1);
+            dc.DrawRoundedRectangle(FastCurrent, null,
+                new Rect(left + width * 0.78, y + depth * 0.42, 1, depth * 0.32), 0.5, 0.5);
+            dc.Pop();
+            dc.Pop();
+        }
         DrawWaterSurface(dc, left, width, y, id);
         dc.Pop();
     }

@@ -8,10 +8,11 @@ $images = @{
     'preview-3.png' = 'account-list.png'
     'preview-traffic-hover-0.png' = 'traffic-hover.png'
     'preview-water-modes.png' = 'water-modes.png'
+    'preview-water-design-5.png' = 'cpa-fast.png'
 }
 foreach ($entry in $images.GetEnumerator()) {
     $file = Join-Path $source $entry.Key
     if (-not (Test-Path -LiteralPath "$file")) { throw '请先运行 --render-preview 生成匿名演示截图。' }
     Copy-Item -LiteralPath "$file" -Destination (Join-Path $destination $entry.Value) -Force
 }
-Write-Host '已更新4张匿名离线预览图，提交前须目视核验。'
+Write-Host "已更新 $($images.Count) 张匿名离线预览图，提交前须目视核验。"
