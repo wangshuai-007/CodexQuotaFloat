@@ -8,6 +8,7 @@ namespace QuotaFloat;
 internal sealed class TrafficSession : IDisposable
 {
     private readonly HttpClient http;
+    private readonly Func<KeeperTrafficSource>? createKeeper;
     private readonly TrafficAccumulator accumulator = new();
     private CancellationTokenSource cancellation = new();
     private AppSettings settings;
@@ -19,9 +20,14 @@ internal sealed class TrafficSession : IDisposable
     private LocalSessionTrafficSource? localSessions;
     internal TrafficSnapshot Snapshot { get; private set; } = TrafficSnapshot.Unknown();
     internal event Action? Changed;
+    private bool UsesKeeper => !settings.UseDemo && settings.UseKeeper;
+    internal TimeSpan PollInterval => TimeSpan.FromSeconds(UsesKeeper ? 5 : 1);
+    internal TrafficSnapshot SnapshotForDisplay(DateTimeOffset now) => Snapshot.ForDisplay(now, UsesKeeper ? 10 : 3);
 
-    internal TrafficSession(AppSettings options, string managementKey, HttpMessageHandler? handler = null)
+    internal TrafficSession(AppSettings options, string managementKey, HttpMessageHandler? handler = null,
+        Func<KeeperTrafficSource>? createKeeper = null)
     {
+        this.createKeeper = createKeeper;
         http = new(handler ?? new HttpClientHandler { AllowAutoRedirect = false })
             { Timeout = TimeSpan.FromSeconds(4), MaxResponseContentBufferSize = 2 * 1024 * 1024 };
         settings = options; key = managementKey;
@@ -57,7 +63,7 @@ internal sealed class TrafficSession : IDisposable
             if (settings.UseDemo) Snapshot = Demo(now);
             else if (settings.UseKeeper)
             {
-                keeper ??= new(settings.KeeperUrl, string.IsNullOrEmpty(settings.KeeperPassword) ?
+                keeper ??= createKeeper?.Invoke() ?? new(settings.KeeperUrl, string.IsNullOrEmpty(settings.KeeperPassword) ?
                     KeeperPasswordEnvironment.Read() : settings.KeeperPassword, settings.AllowKeeperLanHttp);
                 using var data = await keeper.ReadAsync(token);
                 if (current != version) return;

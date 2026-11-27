@@ -48,7 +48,7 @@
   <PasswordBox x:Name="KeyOption"/>
   <TextBlock Text="也可通过 CPA_MANAGEMENT_KEY 环境变量提供。只查询额度，不重置账号；远端地址必须使用 HTTPS。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,8,0,0"/>
   </StackPanel>
-  <TextBlock Text="额度同步间隔（5–3600秒；流量固定每秒独立取数）" Margin="0,16,0,6" FontSize="14"/>
+  <TextBlock Text="额度同步间隔（5–3600秒，不影响流量取数）" Margin="0,16,0,6" FontSize="14"/>
   <TextBox x:Name="IntervalOption"/>
   <StackPanel x:Name="TrafficSection">
   <CheckBox x:Name="KeeperOption" Margin="0,16,0,0" Checked="KeeperChanged" Unchecked="KeeperChanged">
@@ -60,7 +60,7 @@
    <TextBlock Text="Keeper登录密码（仅本次会话）" Margin="0,12,0,6" FontSize="14"/>
    <PasswordBox x:Name="KeeperPasswordOption"/>
    <CheckBox x:Name="KeeperHttpOption" Content="允许局域网HTTP（密码与会话明文传输）" Margin="0,10,0,0"/>
-   <TextBlock Text="密码也可由KEEPER_LOGIN_PASSWORD提供，不复用CPA密钥。登录后每秒只读查询Keeper请求明细；未登录/会话失效暂停，修正后保存或F5重试。统计已完成请求，不是正在生成的速度。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0"/>
+   <TextBlock Text="密码也可由KEEPER_LOGIN_PASSWORD提供，不复用CPA密钥。登录后每5秒只读查询Keeper请求明细；未登录/会话失效暂停，修正后保存或F5重试。统计已完成请求，不是正在生成的速度。" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0"/>
   </StackPanel>
   <StackPanel x:Name="SnapshotSection">
   <TextBlock Text="只读流量快照地址（可选，同CPA域名及端口）" Margin="0,16,0,6" FontSize="14"/>

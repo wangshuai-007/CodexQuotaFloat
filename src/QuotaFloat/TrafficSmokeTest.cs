@@ -34,6 +34,54 @@ public partial class MainWindow
         await slowSession.RefreshAsync();
         await pending;
         Check(slow.Calls == 1, "慢流量请求不重叠、不积压1秒查询", checks);
+        await CheckKeeperCadenceAsync(checks);
+    }
+
+    private async Task CheckKeeperCadenceAsync(List<string> checks)
+    {
+        var handler = new KeeperRateFixtureHandler();
+        const string address = "http://localhost:8123/";
+        var fixture = new MainWindow(new AppSettings { UseDemo = false, UseKeeper = true, RefreshSeconds = 60 },
+            "", false, createKeeper: () => new KeeperTrafficSource(address, "", false, handler));
+        try
+        {
+            await fixture.traffic.RefreshAsync(true);
+            var first = fixture.traffic.Snapshot.UpdatedAt!.Value;
+            await Task.Delay(2200);
+            Check(handler.EventCalls == 1 && fixture.trafficDisplayTimer.Interval == TimeSpan.FromSeconds(1) &&
+                fixture.trafficTimer.Interval == TimeSpan.FromSeconds(5), "Keeper不随每秒界面更新发起请求", checks);
+            Check(fixture.traffic.SnapshotForDisplay(first.AddSeconds(5)).AverageTokensPerSecond > 0 &&
+                fixture.traffic.SnapshotForDisplay(first.AddSeconds(11)).AverageTokensPerSecond is null,
+                "Keeper正常采样间隔不误报过期，旧快照仍会停止显示速率", checks);
+            await handler.SecondPoll.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Check(handler.EventCalls == 2, "Keeper五秒自动轮询仍会取数", checks);
+        }
+        finally { fixture.Close(); }
+    }
+
+    private sealed class KeeperRateFixtureHandler : HttpMessageHandler
+    {
+        internal int EventCalls;
+        internal readonly TaskCompletionSource SecondPoll = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            if (request.Method != HttpMethod.Get) throw new InvalidOperationException("Keeper测试只能读取");
+            var payload = request.RequestUri!.AbsolutePath switch
+            {
+                "/api/v1/auth/session" => """{"authenticated":true}""",
+                "/api/v1/usage/events" => ReadEvents(),
+                _ => throw new InvalidOperationException("Keeper测试访问了非预期路径")
+            };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(payload) });
+        }
+
+        private string ReadEvents()
+        {
+            if (++EventCalls == 2) SecondPoll.SetResult();
+            return JsonSerializer.Serialize(new { events = new[] { new { id = "fixture-keeper",
+                timestamp = DateTimeOffset.UtcNow.AddSeconds(-1), tokens = new { total_tokens = 200 } } }, has_more = false });
+        }
     }
 
     private sealed class RateFixtureHandler : HttpMessageHandler

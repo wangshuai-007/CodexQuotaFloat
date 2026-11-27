@@ -42,7 +42,7 @@ public partial class MainWindow
         }
         if (trafficPeek)
         {
-            peek.UpdateTraffic(traffic.Snapshot.ForDisplay(DateTimeOffset.Now), settings.UseDemo);
+            peek.UpdateTraffic(traffic.SnapshotForDisplay(DateTimeOffset.Now), settings.UseDemo);
             return;
         }
         var selected = Gauge.Viewport.Selected;

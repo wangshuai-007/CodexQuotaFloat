@@ -28,9 +28,10 @@ public sealed record TrafficSnapshot(long? Tokens, int? Requests, IReadOnlyList<
     public string AverageRateNotice => Error ?? (Tokens == 0 ? IsLocalSession ? "最近60秒无本地Token计量记录" : "最近60秒无已完成请求记录" :
         Tokens is null ? "等待只读统计快照" : "最近60秒" + WindowDescription + " ÷ 60秒");
 
-    /// <summary>超过3秒未收到快照时停止显示旧瞬时速率，历史窗口仍保留截至时间。</summary>
-    public TrafficSnapshot ForDisplay(DateTimeOffset now) => UpdatedAt is { } time && now - time > TimeSpan.FromSeconds(3)
-        ? this with { TokensPerSecond = null, RequestsPerSecond = null, Error = "流量快照已超过3秒未更新" } : this;
+    /// <summary>未在来源允许的时间内收到快照时停止显示速率，保留历史窗口及截至时间。</summary>
+    public TrafficSnapshot ForDisplay(DateTimeOffset now, int staleAfterSeconds = 3)
+        => UpdatedAt is { } time && now - time > TimeSpan.FromSeconds(staleAfterSeconds)
+            ? this with { TokensPerSecond = null, RequestsPerSecond = null, Error = $"流量快照已超过{staleAfterSeconds}秒未更新" } : this;
 
     private static string RateLabel(double? value) => value switch
     {

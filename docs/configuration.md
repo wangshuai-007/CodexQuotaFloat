@@ -42,7 +42,7 @@ Codex Hook 关联启动不属于数据源配置；开启、信任、首次消息
 
 独立部署 [CPA Usage Keeper](https://github.com/Willxup/cpa-usage-keeper)，确认浏览器能打开其应用首页，再把**应用根URL**填写到Keeper地址，例如 `https://stats.example.com/keeper/`。不要填写CPA管理根路径、插件菜单路径或 `/api/v1/...`。
 
-程序查询 `GET /api/v1/auth/session`，必要时以Keeper密码调用 `POST /api/v1/auth/login`，随后每秒只读查询 `/api/v1/usage/events?range=5h&page_size=100&cursor_mode=true`。查询范围5h，但显示只统计最近60秒。事件ID去重，只使用时间和Token统计，不读取请求正文。
+程序查询 `GET /api/v1/auth/session`，必要时以Keeper密码调用 `POST /api/v1/auth/login`，随后每5秒只读查询 `/api/v1/usage/events?range=5h&page_size=100&cursor_mode=true`。一轮查询可能分页；显示只统计最近60秒。事件ID去重，只使用时间和Token统计，不读取请求正文。界面仍每秒更新，F5可立即取数。
 
 密码可用 `KEEPER_LOGIN_PASSWORD`（进程→用户→系统）；不复用CPA密钥、不落盘。默认HTTPS，本机HTTP允许，私有IP的HTTP需手动勾选允许局域网HTTP；公网HTTP、URL内嵌凭据、重定向及跳过证书验证均不支持。
 
