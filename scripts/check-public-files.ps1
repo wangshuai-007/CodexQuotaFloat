@@ -5,7 +5,10 @@ $content = Get-Content -LiteralPath "$readme" -Raw
 $matches = [regex]::Matches($content, '\]\(([^)]+)\)')
 foreach ($match in $matches) {
     $link = $match.Groups[1].Value
-    if ($link -notmatch '^https?://' -and -not (Test-Path -LiteralPath (Join-Path $root $link))) { throw "README链接失效：$link" }
+    if ($link -match '^https?://' -or $link.StartsWith('#')) { continue }
+    # Markdown 的锚点不是文件名的一部分；保留原链接用于报错。
+    $path = ($link -split '#', 2)[0]
+    if (-not (Test-Path -LiteralPath (Join-Path $root $path))) { throw "README链接失效：$link" }
 }
 $tracked = & git -C "$root" ls-files --cached --others --exclude-standard
 if ($LASTEXITCODE -ne 0) { throw '无法获取公开文件清单。' }

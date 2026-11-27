@@ -131,12 +131,12 @@ Keeper与额度来源独立，可搭配CPA或本地额度。密码仅会话保�
 dotnet run --project "tests/QuotaFloat.Tests/QuotaFloat.Tests.csproj" -c Release
 & "scripts/build-local.ps1"
 & "release/CodexQuotaFloat.exe" --demo
-& "scripts/publish-release.ps1" -Version "1.2.0"
+& "scripts/publish-release.ps1" -Version "1.2.1"
 ```
 
 普通Build后完整输出自动复制到 `release/`。本地构建脚本只结束本项目占用文件的测试程序，构建与哈希校验成功后重启；失败不启动不完整版本。发布打包用独立暂存目录，不覆盖本地测试程序。
 
-生成安装包、两个 ZIP、SHA256 清单和发布说明，位于 `artifacts/github-release/1.2.0/`。自包含发布不裁剪 WPF 运行时，不是单文件 EXE。标签推送在校验与上传成功后自动发布 GitHub Release（正式版设为 Latest，预发布版不设）；手动运行仅生成 Actions 产物，详见 [发布流程](docs/publishing.md)。
+生成安装包、两个 ZIP、SHA256 清单和发布说明，位于 `artifacts/github-release/1.2.1/`。自包含发布不裁剪 WPF 运行时，不是单文件 EXE。标签推送在校验与上传成功后自动发布 GitHub Release（正式版设为 Latest，预发布版不设）；手动运行仅生成 Actions 产物，详见 [发布流程](docs/publishing.md)。
 
 ## 测试与截图
 
